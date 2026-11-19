@@ -20,8 +20,14 @@
         <select id="dataset">
           <option value="metro">Kingsmere Metro (positions given)</option>
           <option value="workflow">Order workflow (placed automatically)</option>
+          <option value="grid-1000">Grid city, 1,000 stations (load test)</option>
+          <option value="grid-10000">Grid city, 10,000 stations (load test)</option>
+          <option value="random-60">Random network, 60 stations (placed automatically)</option>
+          <option value="random-300">Random network, 300 stations (placed automatically)</option>
+          <option value="random-2000">Random network, 2,000 stations (placed automatically)</option>
         </select>
       </label>
+      <output id="timing"></output>
       <form id="planner">
         <label>From <select id="from"></select></label>
         <label>To <select id="to"></select></label>

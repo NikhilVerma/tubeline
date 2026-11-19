@@ -4,6 +4,8 @@
 
 **Draw any graph as an interactive tube map.**
 
+![A tubeline map of a made-up metro, with a journey from Westmoor to Lighthouse picked out across three lines](docs/hero.png)
+
 tubeline is a graph renderer. You give it nodes and the paths between them as
 JSON, and it draws them the way a city draws its underground: coloured lines,
 named stations, and interchanges where lines meet.
@@ -173,26 +175,18 @@ We measured it. We took a 136 × 112 pt area of central London from the
 official map, gave tubeline the same stations at the same positions, rendered
 both at the same size, and compared them pixel by pixel.
 
-The first comparison found the biggest gaps. We fixed those, then measured again.
-
-| Measure | Before | After |
-| --- | --- | --- |
-| Pixels that differ | 22.8% | 14.2% |
-| Central line overlap | 0.07 | 0.86 |
-| Victoria line overlap | 0.22 | 0.92 |
-| Bakerloo line overlap | 0.33 | 0.84 |
-| Jubilee line overlap | 0.01 | 0.43 |
+| Measure | Result |
+| --- | --- |
+| Pixels that differ | 14.2% |
+| Victoria line overlap | 0.92 |
+| Central line overlap | 0.86 |
+| Bakerloo line overlap | 0.84 |
+| Circle and District line overlap | 0.83 |
+| Jubilee line overlap | 0.43 |
+| Elizabeth line overlap | 0.36 |
 
 Overlap is the share of pixels the two drawings of a line have in common. It
 is 1 when they cover exactly the same pixels.
-
-What closed the gap:
-
-- Lines can stop at their own platforms inside one station.
-- Bends move away from stations, so lines run straight through.
-- Lines on shared track touch each other.
-- Interchanges are rings joined by walkways.
-- Names avoid each other before they avoid track.
 
 What is still different:
 
