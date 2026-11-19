@@ -25,6 +25,18 @@ describe('parseTubeMap', () => {
     ])
   })
 
+  it('reports a platform on top of the next stop, which would leave track with no direction to draw', () => {
+    const data = {
+      stations: [
+        { id: 'a', x: 0, y: 0, platforms: { red: { x: 2, y: 0 } } },
+        { id: 'b', x: 2, y: 0 },
+      ],
+      lines: [{ id: 'red', stations: ['a', 'b'] }],
+    }
+
+    expect(() => parseTubeMap(data)).toThrow('Line "red" stops at "a" and "b" in the same place, 2,0.')
+  })
+
   it('reports optional fields of the wrong type, which would otherwise be dropped without a word', () => {
     const broken = {
       stations: [{ id: 'a', labelSide: 'left' }, { id: 'b', metadata: 'note' }],

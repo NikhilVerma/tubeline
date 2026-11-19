@@ -246,6 +246,8 @@ export function createTubeMap(container: HTMLElement, data: TubeMapData, options
     destroy() {
       lifetime.abort()
       host.remove()
+      // A caller may still hold the map, and nothing it does afterwards should reach the old subscribers.
+      for (const subscribers of Object.values(listeners)) subscribers.clear()
     },
   }
 }

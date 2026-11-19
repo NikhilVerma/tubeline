@@ -15,15 +15,21 @@ export const TOOLTIP_ID = 'tubeline-tooltip'
 /** The space between a tooltip and the point it describes. The stylesheet shifts the tooltip by the same amount. */
 export const TOOLTIP_GAP = 14
 
+/** The least space kept between a tooltip and the sides of the map. */
+const EDGE_MARGIN = 6
+
 export function createTooltip(): Tooltip {
   const element = html('div', { class: 'tooltip', role: 'tooltip', id: TOOLTIP_ID, hidden: '' })
   return {
     element,
     show(content, at) {
       element.replaceChildren(...content)
-      element.style.left = `${at.x}px`
       element.style.top = `${at.y}px`
       element.hidden = false
+      // The tooltip is centred on its point. Near a side of the map it moves inwards, so the map's edge doesn't cut it off.
+      const stageWidth = element.offsetParent?.clientWidth ?? Infinity
+      const reach = element.offsetWidth / 2 + EDGE_MARGIN
+      element.style.left = `${Math.max(reach, Math.min(stageWidth - reach, at.x))}px`
       // The tooltip sits above its point, and drops below when the top of the map would cut it off.
       element.classList.toggle('is-below', at.y < element.offsetHeight + TOOLTIP_GAP)
     },

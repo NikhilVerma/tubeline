@@ -105,10 +105,24 @@ export function parseTubeMap(input: unknown): Network {
       if (!station.lines.includes(lineId)) issues.push(`Station "${station.id}" has a platform for line "${lineId}", which doesn't call there.`)
     }
   }
+  // Track between two stops in the same place has no direction, so it can't be drawn.
+  const stopAt = (stationId: string, lineId: string) => stations.get(stationId)?.platforms.get(lineId) ?? stations.get(stationId)?.position
+  for (const line of lines.values()) {
+    for (const run of line.runs) {
+      for (let i = 1; i < run.length; i++) {
+        const from = stopAt(run[i - 1]!, line.id)
+        const to = stopAt(run[i]!, line.id)
+        if (from !== undefined && to !== undefined && from.x === to.x && from.y === to.y) {
+          issues.push(`Line "${line.id}" stops at "${run[i - 1]}" and "${run[i]}" in the same place, ${from.x},${from.y}. Move one of the platforms.`)
+        }
+      }
+    }
+  }
   const hopsFrom = readHops(data, stations, lines, issues)
+  const name = optional(data.name, 'string', 'The map name', issues) ?? 'Tube map'
 
   if (issues.length > 0) throw new TubeMapDataError(issues)
-  return { name: typeof data.name === 'string' ? data.name : 'Tube map', stations, lines, hopsFrom }
+  return { name, stations, lines, hopsFrom }
 }
 
 function readStations(data: TubeMapData, issues: string[]): Map<string, Station> {

@@ -68,6 +68,22 @@ test('shows a station\'s metadata in a tooltip', async ({ page }) => {
   await expect(tooltip.locator('li')).toHaveText(['Meridian', 'Harbour', 'Garden', 'Canal'])
 })
 
+test('keeps a tooltip inside the map for a station at its edge', async ({ page }) => {
+  // Drag the map until its first station is almost at the left side.
+  const stage = await page.locator('.stage').boundingBox()
+  const halo = await station(page, 'westmoor').locator('.halo').boundingBox()
+  const emptySpot = { x: stage!.x + stage!.width / 2, y: stage!.y + 20 }
+  await page.mouse.move(emptySpot.x, emptySpot.y)
+  await page.mouse.down()
+  await page.mouse.move(emptySpot.x - (halo!.x - stage!.x - 10), emptySpot.y, { steps: 5 })
+  await page.mouse.up()
+  await station(page, 'westmoor').locator('.halo').hover()
+
+  const tooltip = await page.getByRole('tooltip').boundingBox()
+  expect(tooltip!.x).toBeGreaterThanOrEqual(stage!.x)
+  expect(tooltip!.x + tooltip!.width).toBeLessThanOrEqual(stage!.x + stage!.width)
+})
+
 test('shows a connection\'s metadata for the direction it belongs to', async ({ page }) => {
   await page.locator('.line[data-line="meridian"] .segment[data-from="easterly"][data-to="ashdown"]').hover()
 

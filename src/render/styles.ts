@@ -163,6 +163,7 @@ button:focus-visible { outline: 2.5px solid var(--accent); outline-offset: 1px; 
 .tooltip {
   position: absolute;
   z-index: 1;
+  width: max-content;
   max-width: 260px;
   padding: 8px 10px;
   background: var(--ink);

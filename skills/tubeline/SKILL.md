@@ -18,7 +18,7 @@ tubeline lays them out on an eight-direction grid, draws them, and plans journey
 - A reader should be able to trace a path and see where paths meet.
 - You want route planning between two nodes for free.
 
-Do not reach for it for graphs with hundreds of nodes, graphs with no paths (use a general
+Do not reach for it for graphs of 10,000+ nodes (panning slows; a few thousand is fine), graphs with no paths (use a general
 graph library), or diagrams people must edit by dragging.
 
 ## Set it up
@@ -47,7 +47,7 @@ const map = createTubeMap(document.querySelector('#map')!, {
 })
 ```
 
-The container MUST have a height. The map fills it; a zero-height container shows nothing.
+Give the container a height. The map fills it; with no height the map is 320px tall.
 
 ## Data rules
 
@@ -119,7 +119,7 @@ Journey cost = sum of hop costs + `interchangeCost` per change of line.
 
 ## Common mistakes
 
-- **Nothing shows.** The container has no height.
+- **The map is a short 320px strip.** The container has no height.
 - **Updating a map.** There is no update call. `map.destroy()`, then `createTubeMap` again.
 - **React.** Create the map in a ref callback or an effect tied to the container, and call
   `destroy()` on cleanup. Do not create it during render.
