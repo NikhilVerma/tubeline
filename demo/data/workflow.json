@@ -1,0 +1,173 @@
+{
+  "name": "Order workflow",
+  "stations": [
+    {
+      "id": "cart",
+      "name": "Cart",
+      "metadata": {
+        "owner": "web"
+      }
+    },
+    {
+      "id": "checkout",
+      "name": "Checkout",
+      "metadata": {
+        "owner": "web"
+      }
+    },
+    {
+      "id": "payment",
+      "name": "Payment",
+      "metadata": {
+        "owner": "billing"
+      }
+    },
+    {
+      "id": "paid",
+      "name": "Paid",
+      "metadata": {
+        "owner": "billing"
+      }
+    },
+    {
+      "id": "packed",
+      "name": "Packed",
+      "metadata": {
+        "owner": "warehouse"
+      }
+    },
+    {
+      "id": "shipped",
+      "name": "Shipped",
+      "metadata": {
+        "owner": "logistics"
+      }
+    },
+    {
+      "id": "delivered",
+      "name": "Delivered",
+      "metadata": {
+        "owner": "logistics"
+      }
+    },
+    {
+      "id": "declined",
+      "name": "Declined",
+      "metadata": {
+        "owner": "billing"
+      }
+    },
+    {
+      "id": "cancelled",
+      "name": "Cancelled",
+      "metadata": {
+        "owner": "support"
+      }
+    },
+    {
+      "id": "refunded",
+      "name": "Refunded",
+      "metadata": {
+        "owner": "billing"
+      }
+    },
+    {
+      "id": "returned",
+      "name": "Returned",
+      "metadata": {
+        "owner": "warehouse"
+      }
+    },
+    {
+      "id": "review",
+      "name": "Fraud review",
+      "metadata": {
+        "owner": "risk"
+      }
+    }
+  ],
+  "lines": [
+    {
+      "id": "fulfilment",
+      "name": "Fulfilment",
+      "oneWay": true,
+      "stations": [
+        "cart",
+        "checkout",
+        "payment",
+        "paid",
+        "packed",
+        "shipped",
+        "delivered"
+      ]
+    },
+    {
+      "id": "retry",
+      "name": "Payment retry",
+      "oneWay": true,
+      "stations": [
+        "payment",
+        "declined",
+        "checkout"
+      ]
+    },
+    {
+      "id": "cancel",
+      "name": "Cancellation",
+      "oneWay": true,
+      "stations": [
+        "paid",
+        "cancelled",
+        "refunded"
+      ],
+      "branches": [
+        [
+          "packed",
+          "cancelled"
+        ]
+      ]
+    },
+    {
+      "id": "returns",
+      "name": "Returns",
+      "oneWay": true,
+      "stations": [
+        "delivered",
+        "returned",
+        "refunded"
+      ]
+    },
+    {
+      "id": "risk",
+      "name": "Risk check",
+      "oneWay": true,
+      "stations": [
+        "payment",
+        "review",
+        "paid"
+      ],
+      "branches": [
+        [
+          "review",
+          "cancelled"
+        ]
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "from": "payment",
+      "to": "review",
+      "metadata": {
+        "when": "order over \u00a3500"
+      }
+    },
+    {
+      "from": "delivered",
+      "to": "returned",
+      "metadata": {
+        "window": "30 days"
+      }
+    }
+  ]
+}

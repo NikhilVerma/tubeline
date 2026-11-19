@@ -1,0 +1,493 @@
+{
+  "name": "Kingsmere Metro",
+  "stations": [
+    {
+      "id": "westmoor",
+      "name": "Westmoor",
+      "x": 0,
+      "y": 8,
+      "metadata": {
+        "zone": 4,
+        "stepFree": false
+      }
+    },
+    {
+      "id": "hollin",
+      "name": "Hollin Park",
+      "x": 2,
+      "y": 8,
+      "metadata": {
+        "zone": 3,
+        "stepFree": false
+      }
+    },
+    {
+      "id": "fenwick",
+      "name": "Fenwick",
+      "x": 4,
+      "y": 8,
+      "metadata": {
+        "zone": 3,
+        "stepFree": false
+      }
+    },
+    {
+      "id": "castle-gate",
+      "name": "Castle Gate",
+      "x": 6,
+      "y": 8,
+      "metadata": {
+        "zone": 2,
+        "stepFree": true
+      }
+    },
+    {
+      "id": "marlow",
+      "name": "Marlow St",
+      "x": 8,
+      "y": 8,
+      "metadata": {
+        "zone": 1,
+        "stepFree": false
+      }
+    },
+    {
+      "id": "exchange",
+      "name": "Exchange",
+      "x": 10,
+      "y": 8,
+      "metadata": {
+        "zone": 1,
+        "stepFree": true
+      }
+    },
+    {
+      "id": "tanners",
+      "name": "Tanners Row",
+      "x": 12,
+      "y": 8,
+      "metadata": {
+        "zone": 1,
+        "stepFree": false
+      }
+    },
+    {
+      "id": "queensbridge",
+      "name": "Queensbridge",
+      "x": 14,
+      "y": 8,
+      "metadata": {
+        "zone": 2,
+        "stepFree": true
+      }
+    },
+    {
+      "id": "easterly",
+      "name": "Easterly",
+      "x": 16,
+      "y": 8,
+      "metadata": {
+        "zone": 3,
+        "stepFree": false
+      }
+    },
+    {
+      "id": "ashdown",
+      "name": "Ashdown",
+      "x": 18,
+      "y": 6,
+      "metadata": {
+        "zone": 3,
+        "stepFree": false
+      }
+    },
+    {
+      "id": "larkfield",
+      "name": "Larkfield",
+      "x": 20,
+      "y": 4,
+      "metadata": {
+        "zone": 4,
+        "stepFree": true
+      }
+    },
+    {
+      "id": "cinder",
+      "name": "Cinder Hill",
+      "x": 2,
+      "y": 10,
+      "metadata": {
+        "zone": 3,
+        "stepFree": false
+      }
+    },
+    {
+      "id": "pinewood",
+      "name": "Pinewood",
+      "x": 0,
+      "y": 12,
+      "metadata": {
+        "zone": 4,
+        "stepFree": false
+      }
+    },
+    {
+      "id": "northgate",
+      "name": "Northgate",
+      "x": 10,
+      "y": 0,
+      "metadata": {
+        "zone": 3,
+        "stepFree": false
+      }
+    },
+    {
+      "id": "abbey",
+      "name": "Abbey Road",
+      "x": 10,
+      "y": 2,
+      "metadata": {
+        "zone": 2,
+        "stepFree": false
+      }
+    },
+    {
+      "id": "minster",
+      "name": "Minster",
+      "x": 10,
+      "y": 4,
+      "metadata": {
+        "zone": 2,
+        "stepFree": true
+      }
+    },
+    {
+      "id": "guildhall",
+      "name": "Guildhall",
+      "x": 10,
+      "y": 6,
+      "metadata": {
+        "zone": 1,
+        "stepFree": false
+      }
+    },
+    {
+      "id": "riverside",
+      "name": "Riverside",
+      "x": 10,
+      "y": 10,
+      "metadata": {
+        "zone": 1,
+        "stepFree": false
+      }
+    },
+    {
+      "id": "old-dock",
+      "name": "Old Dock",
+      "x": 10,
+      "y": 12,
+      "metadata": {
+        "zone": 2,
+        "stepFree": true
+      }
+    },
+    {
+      "id": "harbour-east",
+      "name": "Harbour East",
+      "x": 12,
+      "y": 14,
+      "metadata": {
+        "zone": 3,
+        "stepFree": false
+      }
+    },
+    {
+      "id": "lighthouse",
+      "name": "Lighthouse",
+      "x": 14,
+      "y": 16,
+      "metadata": {
+        "zone": 4,
+        "stepFree": false
+      }
+    },
+    {
+      "id": "bellfield",
+      "name": "Bellfield",
+      "x": 8,
+      "y": 6,
+      "metadata": {
+        "zone": 2,
+        "stepFree": false
+      }
+    },
+    {
+      "id": "highmere",
+      "name": "Highmere",
+      "x": 12,
+      "y": 6,
+      "metadata": {
+        "zone": 2,
+        "stepFree": false
+      }
+    },
+    {
+      "id": "saltmarket",
+      "name": "Saltmarket",
+      "x": 12,
+      "y": 10,
+      "metadata": {
+        "zone": 2,
+        "stepFree": false
+      }
+    },
+    {
+      "id": "greyfriars",
+      "name": "Greyfriars",
+      "x": 8,
+      "y": 10,
+      "metadata": {
+        "zone": 2,
+        "stepFree": false
+      }
+    },
+    {
+      "id": "southfields",
+      "name": "Southfields",
+      "x": 0,
+      "y": 14,
+      "metadata": {
+        "zone": 4,
+        "stepFree": false
+      }
+    },
+    {
+      "id": "elm-grove",
+      "name": "Elm Grove",
+      "x": 2,
+      "y": 14,
+      "metadata": {
+        "zone": 4,
+        "stepFree": false
+      }
+    },
+    {
+      "id": "priory",
+      "name": "Priory",
+      "x": 4,
+      "y": 14,
+      "metadata": {
+        "zone": 3,
+        "stepFree": false
+      }
+    },
+    {
+      "id": "fairview",
+      "name": "Fairview",
+      "x": 14,
+      "y": 4,
+      "metadata": {
+        "zone": 3,
+        "stepFree": false
+      }
+    },
+    {
+      "id": "copperfield",
+      "name": "Copperfield",
+      "x": 16,
+      "y": 4,
+      "metadata": {
+        "zone": 3,
+        "stepFree": false
+      }
+    },
+    {
+      "id": "windmill",
+      "name": "Windmill",
+      "x": 18,
+      "y": 4,
+      "metadata": {
+        "zone": 4,
+        "stepFree": false
+      }
+    },
+    {
+      "id": "foxhall",
+      "name": "Foxhall",
+      "x": 2,
+      "y": 2,
+      "metadata": {
+        "zone": 4,
+        "stepFree": false
+      }
+    },
+    {
+      "id": "millbrook",
+      "name": "Millbrook",
+      "x": 4,
+      "y": 4,
+      "metadata": {
+        "zone": 3,
+        "stepFree": false
+      }
+    },
+    {
+      "id": "wharf",
+      "name": "Wharf Lane",
+      "x": 8,
+      "y": 14,
+      "metadata": {
+        "zone": 3,
+        "stepFree": false
+      }
+    },
+    {
+      "id": "marsh-end",
+      "name": "Marsh End",
+      "x": 6,
+      "y": 16,
+      "metadata": {
+        "zone": 4,
+        "stepFree": false
+      }
+    }
+  ],
+  "lines": [
+    {
+      "id": "meridian",
+      "name": "Meridian",
+      "color": "#dc241f",
+      "stations": [
+        "westmoor",
+        "hollin",
+        "fenwick",
+        "castle-gate",
+        "marlow",
+        "exchange",
+        "tanners",
+        "queensbridge",
+        "easterly",
+        "ashdown",
+        "larkfield"
+      ],
+      "branches": [
+        [
+          "fenwick",
+          "cinder",
+          "pinewood"
+        ]
+      ],
+      "metadata": {
+        "opened": 1902
+      }
+    },
+    {
+      "id": "harbour",
+      "name": "Harbour",
+      "color": "#0019a8",
+      "stations": [
+        "northgate",
+        "abbey",
+        "minster",
+        "guildhall",
+        "exchange",
+        "riverside",
+        "old-dock",
+        "harbour-east",
+        "lighthouse"
+      ],
+      "metadata": {
+        "opened": 1911
+      }
+    },
+    {
+      "id": "orbital",
+      "name": "Orbital",
+      "color": "#ffc80a",
+      "stations": [
+        "castle-gate",
+        "bellfield",
+        "minster",
+        "highmere",
+        "queensbridge",
+        "saltmarket",
+        "old-dock",
+        "greyfriars",
+        "castle-gate"
+      ],
+      "metadata": {
+        "opened": 1934
+      }
+    },
+    {
+      "id": "garden",
+      "name": "Garden",
+      "color": "#007d32",
+      "stations": [
+        "southfields",
+        "elm-grove",
+        "priory",
+        "greyfriars",
+        "exchange",
+        "highmere",
+        "fairview",
+        "copperfield",
+        "windmill",
+        "larkfield"
+      ],
+      "metadata": {
+        "opened": 1958
+      }
+    },
+    {
+      "id": "canal",
+      "name": "Canal",
+      "color": "#00a0a8",
+      "stations": [
+        "foxhall",
+        "millbrook",
+        "marlow",
+        "exchange",
+        "riverside",
+        "old-dock",
+        "wharf",
+        "marsh-end"
+      ],
+      "metadata": {
+        "opened": 1987
+      }
+    }
+  ],
+  "connections": [
+    {
+      "from": "exchange",
+      "to": "riverside",
+      "line": "harbour",
+      "cost": 3,
+      "metadata": {
+        "note": "River tunnel, runs slowly"
+      }
+    },
+    {
+      "from": "riverside",
+      "to": "exchange",
+      "line": "harbour",
+      "cost": 3,
+      "metadata": {
+        "note": "River tunnel, runs slowly"
+      }
+    },
+    {
+      "from": "ashdown",
+      "to": "easterly",
+      "closed": true
+    },
+    {
+      "from": "easterly",
+      "to": "ashdown",
+      "metadata": {
+        "note": "Eastbound only"
+      }
+    }
+  ]
+}

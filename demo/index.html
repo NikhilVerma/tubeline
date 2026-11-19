@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>tubeline demo</title>
+    <style>
+      html, body { height: 100%; margin: 0; }
+      body { display: grid; grid-template-rows: auto 1fr; font: 14px/1.4 system-ui, sans-serif; }
+      header { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; padding: 10px 16px; border-bottom: 1px solid #ddd; }
+      h1 { margin: 0; font-size: 16px; }
+      form { display: flex; gap: 6px; align-items: center; margin-left: auto; }
+      #map { min-height: 0; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>tubeline</h1>
+      <label>Map
+        <select id="dataset">
+          <option value="metro">Kingsmere Metro (positions given)</option>
+          <option value="workflow">Order workflow (placed automatically)</option>
+        </select>
+      </label>
+      <form id="planner">
+        <label>From <select id="from"></select></label>
+        <label>To <select id="to"></select></label>
+        <button type="submit">Plan journey</button>
+      </form>
+    </header>
+    <main id="map"></main>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

@@ -1,0 +1,4 @@
+interface:
+  display_name: "tubeline"
+  short_description: "Draw a graph as an interactive tube map and plan routes across it"
+  default_prompt: "Use $tubeline to draw this graph as an interactive tube map."
