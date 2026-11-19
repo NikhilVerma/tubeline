@@ -5,7 +5,7 @@
  * and random networks for seeing how well the library places stations. The
  * end-to-end tests drive this page.
  */
-import { createTubeMap, type TubeMap, type TubeMapData } from '../src/index.ts'
+import { createTubeMap, type TubeMap, type TubeMapData, type WheelZoom } from '../src/index.ts'
 import { gridCity } from './data/grid-city.ts'
 import { randomNetwork } from './data/random-network.ts'
 import metro from './data/metro.json' with { type: 'json' }
@@ -24,6 +24,7 @@ const datasets: Record<string, () => TubeMapData> = {
 
 const container = document.querySelector<HTMLElement>('#map')!
 const datasetSelect = document.querySelector<HTMLSelectElement>('#dataset')!
+const wheelZoomSelect = document.querySelector<HTMLSelectElement>('#wheel-zoom')!
 const fromSelect = document.querySelector<HTMLSelectElement>('#from')!
 const toSelect = document.querySelector<HTMLSelectElement>('#to')!
 const timing = document.querySelector<HTMLOutputElement>('#timing')!
@@ -34,7 +35,7 @@ function show(datasetId: string): void {
   map?.destroy()
   const data = datasets[datasetId]!()
   const started = performance.now()
-  map = createTubeMap(container, data)
+  map = createTubeMap(container, data, { wheelZoom: wheelZoomSelect.value as WheelZoom })
   timing.value = `${data.stations.length.toLocaleString('en')} stations, laid out and drawn in ${Math.round(performance.now() - started)} ms`
   for (const select of [fromSelect, toSelect]) {
     select.replaceChildren(...[...map.network.stations.values()].map((station) => new Option(station.name, station.id)))
@@ -47,6 +48,7 @@ function show(datasetId: string): void {
 }
 
 datasetSelect.addEventListener('change', () => show(datasetSelect.value))
+wheelZoomSelect.addEventListener('change', () => show(datasetSelect.value))
 document.querySelector<HTMLFormElement>('#planner')!.addEventListener('submit', (event) => {
   event.preventDefault()
   map?.showJourney(fromSelect.value, toSelect.value)

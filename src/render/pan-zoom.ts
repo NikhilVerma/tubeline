@@ -1,7 +1,14 @@
 import type { Box } from '../layout/geometry.ts'
+import { METRICS } from '../layout/metrics.ts'
 
-/** How far the map can zoom in and out, relative to the view that fits the whole map. A design choice. */
-const MAX_ZOOM = 8
+/**
+ * The closest zoom is the one that draws station names this many screen
+ * pixels tall. A design choice. The limit is a size on screen, so a map of
+ * ten stations and a map of ten thousand zoom in to the same closeness.
+ */
+const LARGEST_NAME_ON_SCREEN = 48
+
+/** How far the map can zoom out, relative to the view that fits the whole map. A design choice. */
 const MIN_ZOOM = 0.6
 
 /** How much one press of a zoom button magnifies. A design choice. */
@@ -12,6 +19,24 @@ const DRAG_THRESHOLD = 4
 
 /** The share of wheel movement that becomes zoom. A design choice: one notch of a mouse wheel zooms by about 15%. */
 const WHEEL_SENSITIVITY = 0.0015
+
+/**
+ * A page that scrolls and a map that zooms both want the mouse wheel. Which
+ * should win depends on where the map sits, so the page chooses:
+ *
+ * - `always`: the wheel zooms the map. This suits a map that fills the screen.
+ * - `with-modifier-key`: the wheel zooms only while Ctrl or ⌘ is held, and a
+ *   plain scroll moves the page. This suits a map part-way down a page that
+ *   scrolls. A pinch on a trackpad still zooms, because browsers report a
+ *   pinch as a wheel turn with Ctrl held.
+ */
+export type WheelZoom = 'always' | 'with-modifier-key'
+
+export interface PanZoomOptions {
+  wheelZoom: WheelZoom
+  /** Called after every change of view. */
+  onViewChange: () => void
+}
 
 export interface PanZoom {
   /** One step in or out, about the middle of the view. The zoom buttons use these. */
@@ -27,10 +52,13 @@ export interface PanZoom {
  *
  * It changes the SVG's `viewBox`, so the drawing stays sharp at any zoom.
  */
-export function attachPanZoom(svg: SVGSVGElement, bounds: Box, signal: AbortSignal): PanZoom {
+export function attachPanZoom(svg: SVGSVGElement, bounds: Box, signal: AbortSignal, { wheelZoom, onViewChange }: PanZoomOptions): PanZoom {
   const home = { x: bounds.left, y: bounds.top, width: bounds.right - bounds.left, height: bounds.bottom - bounds.top }
   let view = { ...home }
-  const apply = () => svg.setAttribute('viewBox', `${view.x} ${view.y} ${view.width} ${view.height}`)
+  const apply = () => {
+    svg.setAttribute('viewBox', `${view.x} ${view.y} ${view.width} ${view.height}`)
+    onViewChange()
+  }
 
   /** `toMap` converts a place on screen to the map's own coordinates. */
   const toMap = (clientX: number, clientY: number): DOMPoint => {
@@ -40,8 +68,12 @@ export function attachPanZoom(svg: SVGSVGElement, bounds: Box, signal: AbortSign
 
   /** `zoomAbout` zooms while keeping the map point `about` under the same place on screen. */
   const zoomAbout = (about: { x: number; y: number }, factor: number) => {
-    const zoom = home.width / view.width
-    const clamped = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, zoom * factor)) / zoom
+    // How many screen pixels one map unit covers. A map that isn't on the page has no size on screen, so nothing limits it.
+    const scale = svg.getScreenCTM()?.a
+    const closest = scale ? LARGEST_NAME_ON_SCREEN / METRICS.labelFontSize / scale : Infinity
+    const furthest = (MIN_ZOOM * view.width) / home.width
+    // A small map in a large container can start closer than the limit. Zooming in then does nothing, rather than jumping out.
+    const clamped = factor > 1 ? Math.min(factor, Math.max(1, closest)) : Math.max(factor, Math.min(1, furthest))
     view = {
       x: about.x - (about.x - view.x) / clamped,
       y: about.y - (about.y - view.y) / clamped,
@@ -118,6 +150,8 @@ export function attachPanZoom(svg: SVGSVGElement, bounds: Box, signal: AbortSign
   svg.addEventListener(
     'wheel',
     (event) => {
+      // Left alone, the wheel turn scrolls the page as usual.
+      if (wheelZoom === 'with-modifier-key' && !event.ctrlKey && !event.metaKey) return
       // The map takes the scroll for itself. The listener is not passive so it can stop the page scrolling too.
       event.preventDefault()
       zoomAbout(toMap(event.clientX, event.clientY), Math.exp(-event.deltaY * WHEEL_SENSITIVITY))

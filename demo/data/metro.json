@@ -476,18 +476,6 @@
       "metadata": {
         "note": "River tunnel, runs slowly"
       }
-    },
-    {
-      "from": "ashdown",
-      "to": "easterly",
-      "closed": true
-    },
-    {
-      "from": "easterly",
-      "to": "ashdown",
-      "metadata": {
-        "note": "Eastbound only"
-      }
     }
   ]
 }

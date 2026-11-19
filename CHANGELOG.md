@@ -7,6 +7,30 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-19
+
+### Added
+
+- The `wheelZoom` option. `'with-modifier-key'` zooms only while Ctrl or ⌘ is
+  held, so a map inside a scrolling page no longer stops the page scrolling.
+
+### Removed
+
+- `connections[].closed`. An edge that can't be travelled is an edge that isn't
+  in the graph, so leave it out. For travel in one direction only, set `oneWay`
+  on the line.
+
+### Changed
+
+- Zooming in stops when station names reach a set size on screen, so large
+  and small maps zoom in equally close. The limit used to be 8 times the
+  whole-map view.
+- The map only draws what is in view. Stations and track outside the view are
+  taken out of the page, and names are hidden while they are too small to
+  read. Panning 10,000 stations went from about 10 frames a second to about 40
+  zoomed out and 60 zoomed in.
+- A station outside the view can't be reached with Tab until it is back in view.
+
 ## [0.1.1] - 2026-11-19
 
 ### Fixed

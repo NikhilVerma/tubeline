@@ -1,5 +1,5 @@
 import type { Network, Point } from '../model/network.ts'
-import { direction, distance, joinOffsetSegments, move, roundedPath, routeBetween, type OffsetSegment } from './geometry.ts'
+import { boxAround, direction, distance, grow, joinOffsetSegments, move, roundedPath, routeBetween, type Box, type OffsetSegment } from './geometry.ts'
 import { METRICS } from './metrics.ts'
 
 /** The drawn piece of a line between two neighbouring stations. */
@@ -10,6 +10,8 @@ export interface SegmentLayout {
   path: string
   /** The half-way point, and the direction of travel there from `from` to `to`. A one-way arrow is drawn here. */
   middle: { at: Point; along: Point }
+  /** The space the piece fills. The renderer uses it to skip pieces that are out of view. */
+  box: Box
 }
 
 export interface LineLayout {
@@ -243,7 +245,8 @@ export function drawLines(
         const { key } = trackBetween(stopAt(run[i - 1]!, line.id), stopAt(run[i]!, line.id))
         if (!segments.has(key)) {
           const path = roundedPath(stepPoints, METRICS.cornerRadius)
-          segments.set(key, { from: run[i - 1]!, to: run[i]!, path, middle: middleOf(stepPoints) })
+          const box = grow(boxAround(stepPoints), METRICS.lineWidth / 2)
+          segments.set(key, { from: run[i - 1]!, to: run[i]!, path, middle: middleOf(stepPoints), box })
         }
       }
     }

@@ -58,7 +58,7 @@ export interface LineData {
  *
  * A line already joins its stations both ways at a cost of 1. A connection
  * changes that for one direction: it gives the direction its own cost or
- * metadata, or closes it.
+ * metadata.
  */
 export interface ConnectionData {
   from: string
@@ -67,8 +67,6 @@ export interface ConnectionData {
   line?: string
   /** What this step adds to a journey's cost. Zero or more. */
   cost?: number
-  /** Stops journeys from travelling this way. */
-  closed?: boolean
   metadata?: Metadata
 }
 

@@ -1,7 +1,7 @@
 import type { Point } from '../model/network.ts'
 import type { LabelSide } from '../model/types.ts'
 import { createBoxIndex } from './box-index.ts'
-import { boxesOverlap, distance, grow, move, segmentTouchesBox, subtract, type Box } from './geometry.ts'
+import { boxAround, boxesOverlap, distance, grow, move, segmentTouchesBox, subtract, type Box } from './geometry.ts'
 import { METRICS } from './metrics.ts'
 
 export interface LabelLayout {
@@ -96,9 +96,8 @@ export function placeLabels(requests: LabelRequest[], tracks: TrackObstacle[]): 
     for (let i = 0; i < stretches; i++) {
       const start = move(track.from, subtract(track.to, track.from), i / stretches)
       const end = move(track.from, subtract(track.to, track.from), (i + 1) / stretches)
-      const box = { left: Math.min(start.x, end.x), top: Math.min(start.y, end.y), right: Math.max(start.x, end.x), bottom: Math.max(start.y, end.y) }
       // Track counts when it comes within its own half width of a name, so it is filed under that wider box.
-      nearbyTracks.add(grow(box, track.halfWidth), track)
+      nearbyTracks.add(grow(boxAround([start, end]), track.halfWidth), track)
     }
   }
   const nearbyMarkers = createBoxIndex<{ of: LabelRequest; box: Box }>(INDEX_CELL_SIZE)
@@ -142,14 +141,7 @@ export function placeLabels(requests: LabelRequest[], tracks: TrackObstacle[]): 
 
 /** The space a station's marker fills: its stops, and the tick or disc drawn on each. */
 function markerBox(request: LabelRequest): Box {
-  const points = [request.center, ...request.stops]
-  const box = {
-    left: Math.min(...points.map((point) => point.x)),
-    top: Math.min(...points.map((point) => point.y)),
-    right: Math.max(...points.map((point) => point.x)),
-    bottom: Math.max(...points.map((point) => point.y)),
-  }
-  return grow(box, METRICS.tickReach)
+  return grow(boxAround([request.center, ...request.stops]), METRICS.tickReach)
 }
 
 function labelOnSide(request: LabelRequest, side: { x: number; y: number }, lines: string[]): LabelLayout {

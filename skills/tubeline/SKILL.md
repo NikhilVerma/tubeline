@@ -18,7 +18,7 @@ tubeline lays them out on an eight-direction grid, draws them, and plans journey
 - A reader should be able to trace a path and see where paths meet.
 - You want route planning between two nodes for free.
 
-Do not reach for it for graphs of 10,000+ nodes (panning slows; a few thousand is fine), graphs with no paths (use a general
+Do not reach for it for graphs far beyond 10,000 nodes (10,000 draws in under a second and pans at about 40 fps zoomed out), graphs with no paths (use a general
 graph library), or diagrams people must edit by dragging.
 
 ## Set it up
@@ -79,7 +79,6 @@ interface ConnectionData {      // overrides ONE direction of ONE step between n
   from: string; to: string
   line?: string                 // omit to apply to every line joining the two
   cost?: number                 // default 1, must be >= 0
-  closed?: boolean
   metadata?: Record<string, unknown>
 }
 ```
@@ -97,7 +96,10 @@ interface ConnectionData {      // overrides ONE direction of ONE step between n
 
 ```ts
 createTubeMap(container: HTMLElement, data: TubeMapData, options?): TubeMap
-// options: { interchangeCost?: number (default 2), legend?: boolean, journeyPanel?: boolean }
+// options: { interchangeCost?: number (default 2), legend?: boolean, journeyPanel?: boolean,
+//            wheelZoom?: 'always' (default) | 'with-modifier-key' }
+// wheelZoom 'with-modifier-key': use when the map sits in a scrolling page; plain wheel scrolls the page, Ctrl/Cmd+wheel zooms.
+// Off-view stations are removed from the DOM and names hide when under 5px on screen; query `map.network`, not the DOM, for data.
 
 map.showJourney(from, to): Journey | null   // null = no route; throws on unknown id
 map.clearJourney()

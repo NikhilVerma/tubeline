@@ -8,3 +8,4 @@ export type { ConnectionData, LabelSide, LineData, Metadata, StationData, TubeMa
 export { DEFAULT_INTERCHANGE_COST, findJourney } from './routing/find-journey.ts'
 export type { Journey, JourneyLeg, JourneyOptions } from './routing/find-journey.ts'
 export type { JourneySelection } from './render/journey-panel.ts'
+export type { WheelZoom } from './render/pan-zoom.ts'

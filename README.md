@@ -95,7 +95,6 @@ These are the rules the library is built on.
 | `connections[]` | Changes travel in one direction between two neighbouring stations, `from` and `to`. |
 | `connections[].line` | The line the change applies to. Left out, it applies to every line that joins the two. |
 | `connections[].cost` | What the step costs a journey. 1 by default. |
-| `connections[].closed` | Set to `true` to stop travel in this direction. |
 | `metadata` | Free-form data on a station, line or connection. |
 
 **Positions.** With positions, the map draws exactly the layout you designed.
@@ -108,8 +107,7 @@ connection changes one direction of one step:
 
 ```json
 [
-  { "from": "exchange", "to": "riverside", "line": "harbour", "cost": 3, "metadata": { "note": "Slow tunnel" } },
-  { "from": "ashdown", "to": "easterly", "closed": true }
+  { "from": "exchange", "to": "riverside", "line": "harbour", "cost": 3, "metadata": { "note": "Slow tunnel" } }
 ]
 ```
 
@@ -149,8 +147,17 @@ const journey = findJourney(network, 'cart', 'paid', { interchangeCost: 0 })
 | `destroy()` | Removes the map and its listeners. |
 | `network` | The checked form of the JSON. |
 
-Options: `interchangeCost`, and `legend` and `journeyPanel`, which hide the
-key and the journey panel when set to `false`.
+Options:
+
+| Option | What it does |
+| --- | --- |
+| `interchangeCost` | What a change of line adds to a journey's cost. 2 by default. |
+| `legend`, `journeyPanel` | Set to `false` to hide the key or the journey panel. |
+| `wheelZoom` | `'always'` (the default): the mouse wheel zooms the map. `'with-modifier-key'`: the wheel zooms only while Ctrl or ⌘ is held, and a plain scroll moves the page. |
+
+A map that fills the screen wants `'always'`. A map part-way down a page that
+scrolls wants `'with-modifier-key'`, or the page stops scrolling whenever the
+pointer is over the map. A trackpad pinch zooms either way.
 
 People can also plan a journey on the map itself: select a start, then a
 destination. Selecting the start again takes it back. Stations work with the
@@ -260,12 +267,14 @@ We tried it on a made-up city: stations on a grid, joined by lines of about 25 s
 | Stations | Work out the layout | Draw it | Show a journey | Panning |
 | --- | --- | --- | --- | --- |
 | 100 | 12 ms | 15 ms | 32 ms | 60 frames a second |
-| 1,000 | 55 ms | 90 ms | 113 ms | about 50 |
-| 10,000 | 430 ms | 800 ms | 153 ms | about 10 |
+| 1,000 | 55 ms | 90 ms | 113 ms | 60 |
+| 10,000 | 430 ms | 800 ms | 153 ms | about 40 zoomed out, 60 zoomed in |
 
 "Draw it" includes working out the layout. Placing stations automatically adds to it: about 2 seconds at 10,000 stations.
 
-Up to a few thousand stations the map feels quick. At 10,000 it appears in under a second, but dragging it is slow, because the browser redraws about 100,000 SVG elements on every move.
+The map only draws what can be seen, the way a game engine does. Stations and track outside the view are taken out of the page, and names aren't drawn while the map is zoomed out too far to read them. Zoomed in, a map of 10,000 stations pans as smoothly as a small one.
+
+A station outside the view can't be reached with Tab until it is back in view.
 
 Finding a journey takes about 10 ms at 10,000 stations, and it runs without a browser.
 

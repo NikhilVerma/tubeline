@@ -28,11 +28,17 @@ test('plans a journey between two clicked stations', async ({ page }) => {
 
   const journey = page.locator('.journey')
   await expect(journey.getByRole('heading')).toHaveText('Larkfield to Marsh End')
-  await expect(journey).toContainText('9 stops · 1 change')
-  await expect(journey.locator('li')).toHaveText([/Garden.*Larkfield to Exchange · 5 stops/, 'Change at Exchange', /Canal.*Exchange to Marsh End · 4 stops/])
+  await expect(journey).toContainText('7 stops · 2 changes')
+  await expect(journey.locator('li')).toHaveText([
+    /Meridian.*Larkfield to Queensbridge · 3 stops/,
+    'Change at Queensbridge',
+    /Orbital.*Queensbridge to Old Dock · 2 stops/,
+    'Change at Old Dock',
+    /Canal.*Old Dock to Marsh End · 2 stops/,
+  ])
 
   // The route is picked out on the map and everything else fades back.
-  await expect(page.locator('.segment.on-journey')).toHaveCount(9)
+  await expect(page.locator('.segment.on-journey')).toHaveCount(7)
   await expect(station(page, 'larkfield')).toHaveClass(/is-origin/)
   await expect(station(page, 'marsh-end')).toHaveClass(/is-destination/)
 
@@ -84,13 +90,13 @@ test('keeps a tooltip inside the map for a station at its edge', async ({ page }
   expect(tooltip!.x + tooltip!.width).toBeLessThanOrEqual(stage!.x + stage!.width)
 })
 
-test('shows a connection\'s metadata for the direction it belongs to', async ({ page }) => {
-  await page.locator('.line[data-line="meridian"] .segment[data-from="easterly"][data-to="ashdown"]').hover()
+test('shows a connection\'s metadata under its direction of travel', async ({ page }) => {
+  await page.locator('.line[data-line="harbour"] .segment[data-from="riverside"][data-to="exchange"], .line[data-line="harbour"] .segment[data-from="exchange"][data-to="riverside"]').hover()
 
   const tooltip = page.getByRole('tooltip')
-  await expect(tooltip).toContainText('Meridian')
-  await expect(tooltip.locator('.direction')).toHaveText('Easterly → Ashdown')
-  await expect(tooltip).toContainText('Eastbound only')
+  await expect(tooltip).toContainText('Harbour')
+  await expect(tooltip.locator('.direction')).toHaveText(['Exchange → Riverside', 'Riverside → Exchange'], { ignoreCase: false })
+  await expect(tooltip).toContainText('River tunnel, runs slowly')
 })
 
 test('picks a line out from the key', async ({ page }) => {
@@ -132,6 +138,33 @@ test('zooms and pans, and resets to the whole map', async ({ page }) => {
 
   await page.getByRole('button', { name: 'Reset view' }).click()
   expect((await viewBox()).slice(0, 3)).toEqual([homeX, homeY, homeWidth])
+})
+
+test('with-modifier-key leaves a plain scroll to the page and zooms with Ctrl held', async ({ page }) => {
+  await page.locator('#wheel-zoom').selectOption('with-modifier-key')
+  const map = page.locator('svg.map')
+  const width = async () => Number(((await map.getAttribute('viewBox')) ?? '').split(' ')[2])
+  const homeWidth = await width()
+
+  await map.hover()
+  await page.mouse.wheel(0, -300)
+  expect(await width()).toBe(homeWidth)
+
+  await page.keyboard.down('Control')
+  await page.mouse.wheel(0, -300)
+  await page.keyboard.up('Control')
+  expect(await width()).toBeLessThan(homeWidth)
+})
+
+test('takes stations that are out of view off the page, and puts them back', async ({ page }) => {
+  await expect(page.locator('.station')).toHaveCount(metro.stations.length)
+
+  for (let press = 0; press < 5; press++) await page.getByRole('button', { name: 'Zoom in' }).click()
+  await expect.poll(() => page.locator('.station').count()).toBeLessThan(metro.stations.length)
+  await expect.poll(() => page.locator('.station').count()).toBeGreaterThan(0)
+
+  await page.getByRole('button', { name: 'Reset view' }).click()
+  await expect(page.locator('.station')).toHaveCount(metro.stations.length)
 })
 
 test('a drag that starts on a station pans the map instead of selecting it', async ({ page }) => {

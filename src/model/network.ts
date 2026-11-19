@@ -50,7 +50,7 @@ export interface Network {
   name: string
   stations: Map<string, Station>
   lines: Map<string, Line>
-  /** The steps that leave each station. Closed directions are left out. */
+  /** The steps that leave each station. */
   hopsFrom: Map<string, Hop[]>
 }
 
@@ -245,7 +245,7 @@ function readLines(data: TubeMapData, stations: Map<string, Station>, issues: st
 /**
  * Builds the steps journeys can take. Every pair of neighbouring stations on a
  * line gives one step each way, or only forwards on a one-way line. The JSON's
- * connections then adjust or close single directions.
+ * connections then adjust single directions.
  */
 function readHops(
   data: TubeMapData,
@@ -272,7 +272,6 @@ function readHops(
     }
   }
 
-  const closed = new Set<Hop>()
   if (data.connections !== undefined && !Array.isArray(data.connections)) issues.push('"connections" must be an array.')
   for (const [index, raw] of (Array.isArray(data.connections) ? data.connections : []).entries()) {
     if (!isRecord(raw) || !isId(raw.from) || !isId(raw.to)) {
@@ -290,12 +289,9 @@ function readHops(
       issues.push(`connections[${index}]: "${raw.from}" and "${raw.to}" are not next to each other on ${where}.`)
     }
     const where = `connections[${index}]`
-    const isClosed = optional(raw.closed, 'boolean', `${where} closed`, issues) ?? false
     const metadata = raw.metadata === undefined ? undefined : optionalMetadata(raw.metadata, where, issues)
     for (const lineId of matches) {
       const hop = hops.get(lineId)!.get(raw.from)!.get(raw.to)!
-      // A closed step stays in the table until every connection is read, so a later connection can still find it.
-      if (isClosed) closed.add(hop)
       if (raw.cost !== undefined) hop.cost = raw.cost
       if (metadata !== undefined) hop.metadata = metadata
     }
@@ -305,7 +301,7 @@ function readHops(
   for (const stationId of stations.keys()) hopsFrom.set(stationId, [])
   for (const fromLine of hops.values()) {
     for (const [from, fromStation] of fromLine) {
-      hopsFrom.get(from)?.push(...[...fromStation.values()].filter((hop) => !closed.has(hop)))
+      hopsFrom.get(from)?.push(...fromStation.values())
     }
   }
   return hopsFrom

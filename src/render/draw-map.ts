@@ -1,7 +1,9 @@
+import { boxAround, grow } from '../layout/geometry.ts'
 import type { MapLayout, StationLayout } from '../layout/layout.ts'
 import { METRICS } from '../layout/metrics.ts'
 import type { Network } from '../model/network.ts'
 import { setLineColor, svg } from './dom.ts'
+import type { DrawnPiece } from './view-culling.ts'
 
 /** The drawn map, with the elements the interactive layer needs to find again. */
 export interface DrawnMap {
@@ -10,6 +12,8 @@ export interface DrawnMap {
   lines: Map<string, SVGGElement>
   /** Each drawn piece of a line, keyed by `segmentKey`. */
   segments: Map<string, SVGGElement>
+  /** Every station and piece of line with the space it fills, so the ones out of view can be skipped. */
+  pieces: DrawnPiece[]
 }
 
 /**
@@ -37,6 +41,7 @@ export function drawMap(network: Network, layout: MapLayout): DrawnMap {
     network.hopsFrom.get(from)?.some((hop) => hop.to === to && hop.line === line) ?? false
   const lines = new Map<string, SVGGElement>()
   const stations = new Map<string, SVGGElement>()
+  const pieces: DrawnPiece[] = []
 
   for (const lineLayout of layout.lines) {
     const line = network.lines.get(lineLayout.id)!
@@ -55,6 +60,7 @@ export function drawMap(network: Network, layout: MapLayout): DrawnMap {
         piece.append(svg('path', { class: 'arrow', d: ARROW_PATH, transform: `translate(${at.x} ${at.y}) rotate(${angle})` }))
       }
       segments.set(segmentKey(line.id, segment.from, segment.to), piece)
+      pieces.push({ element: piece, box: segment.box })
       group.append(piece)
     }
     lines.set(line.id, group)
@@ -65,6 +71,7 @@ export function drawMap(network: Network, layout: MapLayout): DrawnMap {
     const lineNames = station.lines.map((lineId) => network.lines.get(lineId)!.name).join(', ')
     const { center, label } = stationLayout
     const reach = Math.max(0, ...stationLayout.passes.map((pass) => Math.hypot(pass.at.x - center.x, pass.at.y - center.y)))
+    const haloRadius = reach + METRICS.tickReach + HALO_MARGIN
 
     const group = svg(
       'g',
@@ -77,7 +84,7 @@ export function drawMap(network: Network, layout: MapLayout): DrawnMap {
         'aria-label': `${station.name}. ${station.lines.length > 1 ? 'Lines' : 'Line'}: ${lineNames}.`,
       },
       [
-        svg('circle', { class: 'halo', cx: center.x, cy: center.y, r: reach + METRICS.tickReach + HALO_MARGIN }),
+        svg('circle', { class: 'halo', cx: center.x, cy: center.y, r: haloRadius }),
         ...drawMarker(network, stationLayout),
         svg(
           'text',
@@ -87,6 +94,13 @@ export function drawMap(network: Network, layout: MapLayout): DrawnMap {
       ],
     )
     stations.set(station.id, group)
+    // A station fills its halo, which covers the marker, and its name.
+    const halo = grow(boxAround([center]), haloRadius)
+    const corners = [halo, label.box].flatMap((box) => [
+      { x: box.left, y: box.top },
+      { x: box.right, y: box.bottom },
+    ])
+    pieces.push({ element: group, box: boxAround(corners) })
   }
 
   const root = svg(
@@ -99,7 +113,7 @@ export function drawMap(network: Network, layout: MapLayout): DrawnMap {
     },
     [svg('g', { class: 'lines' }, [...lines.values()]), svg('g', { class: 'stations' }, [...stations.values()])],
   )
-  return { svg: root, stations, lines, segments }
+  return { svg: root, stations, lines, segments, pieces }
 }
 
 function drawMarker(network: Network, station: StationLayout): SVGElement[] {

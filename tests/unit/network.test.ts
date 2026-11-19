@@ -47,17 +47,16 @@ describe('parseTubeMap', () => {
     expect(() => parseTubeMap(broken)).toThrowError(/labelSide "left"[\s\S]*metadata must be an object[\s\S]*branches must be an array[\s\S]*oneWay must be a boolean/)
   })
 
-  it('lets a connection close one direction and price the other', () => {
+  it('lets a connection price one direction and leave the other', () => {
     const network = parseTubeMap({
       stations: [{ id: 'a' }, { id: 'b' }],
       lines: [{ id: 'red', stations: ['a', 'b'] }],
       connections: [
-        { from: 'b', to: 'a', closed: true },
         { from: 'a', to: 'b', cost: 5, metadata: { note: 'slow' } },
       ],
     })
 
     expect(network.hopsFrom.get('a')).toEqual([{ from: 'a', to: 'b', line: 'red', cost: 5, metadata: { note: 'slow' } }])
-    expect(network.hopsFrom.get('b')).toEqual([])
+    expect(network.hopsFrom.get('b')).toEqual([{ from: 'b', to: 'a', line: 'red', cost: 1, metadata: {} }])
   })
 })

@@ -166,6 +166,16 @@ export interface Box {
   bottom: number
 }
 
+/** The smallest box that holds every one of `points`. */
+export function boxAround(points: Point[]): Box {
+  return {
+    left: Math.min(...points.map((point) => point.x)),
+    top: Math.min(...points.map((point) => point.y)),
+    right: Math.max(...points.map((point) => point.x)),
+    bottom: Math.max(...points.map((point) => point.y)),
+  }
+}
+
 export function boxesOverlap(a: Box, b: Box): boolean {
   return a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom
 }

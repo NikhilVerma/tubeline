@@ -111,6 +111,7 @@ export const STYLES: string = /* css */ `
 }
 .station.is-origin .label,
 .station.is-destination .label { font-weight: 700; }
+.map.names-too-small .label { display: none; }
 
 /* While a journey or a single line is picked out, everything else fades back. */
 .has-journey .segment:not(.on-journey),

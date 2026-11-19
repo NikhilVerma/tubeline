@@ -5,8 +5,9 @@ import { drawMap, segmentKey } from './render/draw-map.ts'
 import { html } from './render/dom.ts'
 import { createJourneyPanel, type JourneySelection } from './render/journey-panel.ts'
 import { createLegend } from './render/legend.ts'
-import { attachPanZoom } from './render/pan-zoom.ts'
+import { attachPanZoom, type WheelZoom } from './render/pan-zoom.ts'
 import { STYLES } from './render/styles.ts'
+import { attachViewCulling } from './render/view-culling.ts'
 import { createTooltip, segmentTooltip, stationTooltip, TOOLTIP_ID } from './render/tooltip.ts'
 import { findJourney, type Journey, type JourneyOptions } from './routing/find-journey.ts'
 
@@ -15,6 +16,8 @@ export interface TubeMapOptions extends JourneyOptions {
   legend?: boolean
   /** Set to false to hide the panel that lists the planned journey. */
   journeyPanel?: boolean
+  /** When the mouse wheel zooms the map: `always` (the default), or `with-modifier-key` to leave a plain scroll to the page. */
+  wheelZoom?: WheelZoom
 }
 
 /**
@@ -93,7 +96,11 @@ export function createTubeMap(container: HTMLElement, data: TubeMapData, options
   shadow.adoptedStyleSheets = [sheet]
 
   const tooltip = createTooltip()
-  const panZoom = attachPanZoom(drawn.svg, layout.bounds, signal)
+  const culling = attachViewCulling(drawn.svg, drawn.pieces, signal)
+  const panZoom = attachPanZoom(drawn.svg, layout.bounds, signal, {
+    wheelZoom: options.wheelZoom ?? 'always',
+    onViewChange: culling.refresh,
+  })
   // The stage holds the map and what floats over it. The sidebar holds the journey and the key.
   const stage = html('div', { class: 'stage' }, [drawn.svg, tooltip.element])
   const sidebar = html('aside', { class: 'sidebar' })

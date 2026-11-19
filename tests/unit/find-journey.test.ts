@@ -36,17 +36,6 @@ describe('findJourney', () => {
     expect(journey?.cost).toBe(2)
   })
 
-  it('goes round a closed direction', () => {
-    const network = parseTubeMap(metro)
-
-    // Ashdown to Easterly is closed, so the one-stop ride back is not allowed.
-    expect(stationsOf(findJourney(network, 'easterly', 'ashdown'))).toEqual(['easterly', 'ashdown'])
-    const detour = findJourney(network, 'ashdown', 'easterly')
-    expect(detour?.legs.flatMap((leg) => leg.hops)).not.toContainEqual(expect.objectContaining({ from: 'ashdown', to: 'easterly' }))
-    // Seven stops and three changes: the long way round through Highmere.
-    expect(detour?.cost).toBe(13)
-  })
-
   it('refuses an interchange cost that would stop the search ending', () => {
     const network = parseTubeMap(TWO_WAYS)
 
