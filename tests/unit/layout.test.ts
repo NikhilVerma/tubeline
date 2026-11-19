@@ -91,6 +91,28 @@ describe('layoutNetwork', () => {
       deep: { x: 4 * METRICS.gridSize, y: METRICS.gridSize },
     })
   })
+  it('keeps two lines on the same sides of each other round a turn, so they never cross', () => {
+    const network = parseTubeMap({
+      stations: [
+        { id: 'a', x: 0, y: 0 },
+        { id: 'b', x: 2, y: 0 },
+        { id: 'c', x: 2, y: -2 },
+        { id: 'd', x: 2, y: -4 },
+      ],
+      lines: [
+        { id: 'first', stations: ['a', 'b', 'c', 'd'] },
+        { id: 'second', stations: ['a', 'b', 'c', 'd'] },
+      ],
+    })
+    const layout = layoutNetwork(network)
+    const passAt = (stationId: string, lineId: string) =>
+      layout.stations.find((station) => station.id === stationId)!.passes.find((pass) => pass.line === lineId)!.at
+
+    // Heading east and then north, the line on the north side has to end up on the west side.
+    const firstIsNorth = passAt('a', 'first').y < passAt('a', 'second').y
+    const firstIsWest = passAt('c', 'first').x < passAt('c', 'second').x
+    expect(firstIsWest).toBe(firstIsNorth)
+  })
 })
 
 describe('buildTracks', () => {

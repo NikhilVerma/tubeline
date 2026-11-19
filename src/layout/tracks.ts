@@ -75,7 +75,55 @@ export function buildTracks(network: Network, stopAt: StopLookup): Map<string, T
     }
   }
   straightenThroughStations(tracks, journeys)
+  keepLinesInOrder(journeys)
   return tracks
+}
+
+/**
+ * Lines that share track keep the same neighbour on the same side for as long
+ * as they travel together. Without that they would swap sides at a station
+ * and cross over each other.
+ *
+ * A track lists its lines from one side to the other, as seen along its own
+ * direction. Two tracks in a row can point opposite ways along a line's
+ * travel, and then the same list means the opposite order on the page.
+ * `keepLinesInOrder` reverses the list of every track that points against the
+ * track before it, starting from the first track of each line.
+ */
+function keepLinesInOrder(journeys: Step[][]): void {
+  // Each track next to another along some line, and whether the two point opposite ways.
+  const neighbours = new Map<Track, { track: Track; opposite: boolean }[]>()
+  const join = (a: Step, b: Step) => {
+    const ofTrack = neighbours.get(a.track) ?? []
+    neighbours.set(a.track, ofTrack)
+    ofTrack.push({ track: b.track, opposite: a.reversed !== b.reversed })
+  }
+  for (const steps of journeys) {
+    for (let i = 1; i < steps.length; i++) {
+      join(steps[i - 1]!, steps[i]!)
+      join(steps[i]!, steps[i - 1]!)
+    }
+  }
+
+  // Spread out from each track not yet reached. The first route to reach a track decides its order.
+  const reversedOrder = new Map<Track, boolean>()
+  for (const steps of journeys) {
+    for (const { track: start } of steps) {
+      if (reversedOrder.has(start)) continue
+      reversedOrder.set(start, false)
+      const queue = [start]
+      for (let track = queue.shift(); track !== undefined; track = queue.shift()) {
+        for (const next of neighbours.get(track) ?? []) {
+          if (reversedOrder.has(next.track)) continue
+          reversedOrder.set(next.track, reversedOrder.get(track)! !== next.opposite)
+          queue.push(next.track)
+        }
+      }
+    }
+  }
+  for (const [track, reversed] of reversedOrder) {
+    if (reversed) track.lines.reverse()
+  }
 }
 
 /** One track of a line's stretch. `reversed` is true when the line travels it against the order of its points. */
