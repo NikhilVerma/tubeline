@@ -152,7 +152,7 @@ Options:
 | Option | What it does |
 | --- | --- |
 | `interchangeCost` | What a change of line adds to a journey's cost. 2 by default. |
-| `legend`, `journeyPanel` | Set to `false` to hide the key or the journey panel. |
+| `legend`, `journeyPanel`, `zoomButtons` | Set to `false` to hide the key, the journey panel or the zoom buttons. |
 | `wheelZoom` | `'always'` (the default): the mouse wheel zooms the map. `'with-modifier-key'`: the wheel zooms only while Ctrl or ⌘ is held, and a plain scroll moves the page. |
 
 A map that fills the screen wants `'always'`. A map part-way down a page that

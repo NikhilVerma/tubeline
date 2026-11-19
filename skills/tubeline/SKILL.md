@@ -96,7 +96,7 @@ interface ConnectionData {      // overrides ONE direction of ONE step between n
 
 ```ts
 createTubeMap(container: HTMLElement, data: TubeMapData, options?): TubeMap
-// options: { interchangeCost?: number (default 2), legend?: boolean, journeyPanel?: boolean,
+// options: { interchangeCost?: number (default 2), legend?: boolean, journeyPanel?: boolean, zoomButtons?: boolean,
 //            wheelZoom?: 'always' (default) | 'with-modifier-key' }
 // wheelZoom 'with-modifier-key': use when the map sits in a scrolling page; plain wheel scrolls the page, Ctrl/Cmd+wheel zooms.
 // Off-view stations are removed from the DOM and names hide when under 5px on screen; query `map.network`, not the DOM, for data.

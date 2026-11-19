@@ -16,6 +16,8 @@ export interface TubeMapOptions extends JourneyOptions {
   legend?: boolean
   /** Set to false to hide the panel that lists the planned journey. */
   journeyPanel?: boolean
+  /** Set to false to hide the zoom and reset buttons, for a map that is only there to be looked at. */
+  zoomButtons?: boolean
   /** When the mouse wheel zooms the map: `always` (the default), or `with-modifier-key` to leave a plain scroll to the page. */
   wheelZoom?: WheelZoom
 }
@@ -108,18 +110,20 @@ export function createTubeMap(container: HTMLElement, data: TubeMapData, options
   if (network.stations.size > MOST_STATIONS_TO_FADE) root.classList.add('no-fade')
   shadow.append(root)
 
-  const controls = (
-    [
-      ['Zoom in', '+', panZoom.zoomIn],
-      ['Zoom out', '−', panZoom.zoomOut],
-      ['Reset view', '⟲', panZoom.reset],
-    ] as const
-  ).map(([label, symbol, action]) => {
-    const button = html('button', { type: 'button', 'aria-label': label, title: label }, [symbol])
-    button.addEventListener('click', action, { signal })
-    return button
-  })
-  stage.append(html('div', { class: 'panel controls' }, controls))
+  if (options.zoomButtons !== false) {
+    const controls = (
+      [
+        ['Zoom in', '+', panZoom.zoomIn],
+        ['Zoom out', '−', panZoom.zoomOut],
+        ['Reset view', '⟲', panZoom.reset],
+      ] as const
+    ).map(([label, symbol, action]) => {
+      const button = html('button', { type: 'button', 'aria-label': label, title: label }, [symbol])
+      button.addEventListener('click', action, { signal })
+      return button
+    })
+    stage.append(html('div', { class: 'panel controls' }, controls))
+  }
 
   // The key picks one line out at a time.
   let focusedLine: string | null = null

@@ -7,6 +7,13 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-11-19
+
+### Added
+
+- The `zoomButtons` option. Set it to `false` to hide the zoom and reset
+  buttons, for a map that is only there to be looked at.
+
 ## [0.2.0] - 2026-11-19
 
 ### Added
