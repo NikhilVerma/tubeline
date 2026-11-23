@@ -184,18 +184,18 @@ both at the same size, and compared them pixel by pixel.
 
 | Measure | Result |
 | --- | --- |
-| Pixels that differ | 14.2% |
-| Victoria line overlap | 0.92 |
-| Central line overlap | 0.86 |
-| Bakerloo line overlap | 0.84 |
-| Circle and District line overlap | 0.83 |
-| Jubilee line overlap | 0.43 |
-| Elizabeth line overlap | 0.36 |
+| Pixels that match | 85.8% |
+| Victoria line | 92% |
+| Central line | 86% |
+| Bakerloo line | 84% |
+| Circle and District lines | 83% |
+| Jubilee line | 43% |
+| Elizabeth line | 36% |
 
-Overlap is the share of pixels the two drawings of a line have in common. It
-is 1 when they cover exactly the same pixels.
+A line's figure is the share of pixels the two drawings of that line have in
+common. It is 100% when they cover exactly the same pixels.
 
-What is still different:
+What doesn't match yet:
 
 - The official map uses its own typeface. tubeline uses yours.
 - tubeline has no step-free, rail or river symbols, and draws no river.
