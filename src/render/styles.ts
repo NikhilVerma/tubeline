@@ -73,7 +73,7 @@ export const STYLES: string = /* css */ `
 .arrow { fill: var(--background); }
 .tick {
   fill: none;
-  stroke-width: ${METRICS.lineWidth * 0.6};
+  stroke-width: ${METRICS.tickWidth};
   stroke-linecap: butt;
 }
 .interchange-outline,

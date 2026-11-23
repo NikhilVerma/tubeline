@@ -68,7 +68,7 @@ These are the rules the library is built on.
 1. **It is a graph first.** The tube map is the interface, and the data underneath is nodes, paths and weighted, directed edges. Nothing in the library knows about trains.
 2. **Track runs in eight directions only.** Every stretch is horizontal, vertical or at 45°. This one rule is most of what makes a tube map look like a tube map.
 3. **A line runs straight through a station.** Each stretch between two stations gets at most one bend, and the bend sits away from the stations where it can.
-4. **Lines that share track run side by side.** They touch, keep their order, and share one station mark.
+4. **Lines that share track run side by side.** They keep a thin gap between them, keep their order, and share one station mark.
 5. **A station is a tick, and an interchange is a ring.** Lines that stop a short way apart get a ring each, joined by a walkway.
 6. **Your positions are kept.** Give positions and the map draws your design. Leave them out and it places the stations itself, which suits small graphs.
 7. **The layout is plain geometry.** Positions, track and names are worked out before anything is drawn, without a browser. That is why the layout can be unit tested.
@@ -184,11 +184,12 @@ both at the same size, and compared them pixel by pixel.
 
 | Measure | Result |
 | --- | --- |
-| Pixels that match | 85.8% |
+| Pixels that match | 85.1% |
 | Victoria line | 92% |
 | Central line | 86% |
 | Bakerloo line | 84% |
-| Circle and District lines | 83% |
+| District line | 70% |
+| Circle line | 63% |
 | Jubilee line | 43% |
 | Elizabeth line | 36% |
 
@@ -200,6 +201,7 @@ What doesn't match yet:
 - The official map uses its own typeface. tubeline uses yours.
 - tubeline has no step-free, rail or river symbols, and draws no river.
 - tubeline allows one bend between two stations. The official map sometimes uses two.
+- tubeline keeps a thin gap between all lines that share track. The official map lets some touch, such as the Circle and District lines.
 - tubeline draws every line solid. The official map also has hollow and dashed lines.
 
 This is tubeline's own drawing of that area:

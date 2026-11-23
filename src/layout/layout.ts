@@ -57,7 +57,8 @@ export function layoutNetwork(network: Network): MapLayout {
 
   const obstacles: TrackObstacle[] = []
   for (const track of tracks.values()) {
-    const halfWidth = (track.lines.length * METRICS.lineSpacing) / 2
+    // Half of what the track's lines cover: the first and last line are a spacing apart for each line between them, and each reaches half its width further out.
+    const halfWidth = ((track.lines.length - 1) * METRICS.lineSpacing + METRICS.lineWidth) / 2
     for (let i = 1; i < track.points.length; i++) obstacles.push({ from: track.points[i - 1]!, to: track.points[i]!, halfWidth })
   }
 
@@ -125,15 +126,45 @@ function runSideBySide(passes: Pass[]): boolean {
 
 /** A tick becomes a bar across the line at the end of a line, or when the name sits in line with the track. */
 function isBar(pass: Pass, labelSide: Point): boolean {
-  const across = clockwiseNormal(pass.along)
+  const across = clockwiseNormal(trackUnderTick(pass, labelSide))
   return pass.terminus || Math.abs(across.x * labelSide.x + across.y * labelSide.y) < 0.1
 }
 
-/** A tick sticks out of the line towards the station's name. A bar crosses the line instead. */
+/**
+ * A tick sticks out of the line towards the station's name. A bar crosses the line instead.
+ *
+ * Where a piece of track stops at a station, at the end of a line or at a
+ * turn, it is drawn with a rounded end that reaches half the line's width
+ * past the station. A tick is thinner than the line, so one left on the
+ * station would stick out of the middle of that rounded end. There the tick
+ * moves out until its edge is level with the end of the track, which gives
+ * the track a flat end.
+ */
 function tickFor(pass: Pass, labelSide: Point): { from: Point; to: Point } {
-  const across = clockwiseNormal(pass.along)
+  const track = trackUnderTick(pass, labelSide)
+  const across = clockwiseNormal(track)
   const reach = (Math.sign(across.x * labelSide.x + across.y * labelSide.y) || 1) * METRICS.tickReach
-  return { from: isBar(pass, labelSide) ? move(pass.at, across, -reach) : pass.at, to: move(pass.at, across, reach) }
+  // The track carries on when another piece of the line leaves the station the opposite way.
+  const trackStopsHere = !pass.alsoAlong.some((other) => other.x * track.x + other.y * track.y < SAME_PLACE - 1)
+  const middle = trackStopsHere ? move(pass.at, track, (METRICS.lineWidth - METRICS.tickWidth) / 2) : pass.at
+  return { from: isBar(pass, labelSide) ? move(middle, across, -reach) : middle, to: move(middle, across, reach) }
+}
+
+/**
+ * A tick stands square to its line. Where the line turns at a station there
+ * is more than one piece of track to stand square to, and the wrong one
+ * leaves the tick pointing past the station's name.
+ *
+ * `trackUnderTick` returns the direction of the piece whose tick points most
+ * nearly at the name.
+ */
+function trackUnderTick(pass: Pass, labelSide: Point): Point {
+  const towardsName = (track: Point) => Math.abs(track.x * labelSide.y - track.y * labelSide.x)
+  let best = pass.along
+  for (const track of pass.alsoAlong) {
+    if (towardsName(track) > towardsName(best) + SAME_PLACE) best = track
+  }
+  return best
 }
 
 function boundsOf(stations: StationLayout[]): Box {

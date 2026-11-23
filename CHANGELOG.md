@@ -7,6 +7,18 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-11-23
+
+### Changed
+
+- Lines that share track keep a thin gap between them. They used to touch.
+- A branch that meets its line at an angle curves onto it. It used to meet
+  it at a sharp point.
+- A line stops flat against the bar at its last station. Its rounded end used
+  to show past the bar.
+- Where a line turns at a station, the tick points at the station's name and
+  sits level with the outside of the corner.
+
 ## [0.2.1] - 2026-11-19
 
 ### Added

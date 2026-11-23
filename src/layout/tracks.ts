@@ -23,10 +23,15 @@ export interface LineLayout {
 export interface Pass {
   line: string
   at: Point
-  /** The direction the line runs in here, as a vector of length 1. */
+  /** The direction the line runs in here, as a vector of length 1. Where the line ends, it points off the end of the line. */
   along: Point
   /** True when the line ends at this station. */
   terminus: boolean
+  /**
+   * The line's other pieces of track at this station, where it turns or a branch leaves. Each is a direction that
+   * points from its piece through the station, as `along` does. A tick can stand square to any of them.
+   */
+  alsoAlong: Point[]
 }
 
 /**
@@ -205,14 +210,20 @@ export function drawLines(
     const addNeighbour = (of: string, neighbour: string) => {
       neighbours.set(of, (neighbours.get(of) ?? new Set()).add(neighbour))
     }
-    const addPass = (station: string, at: Point, along: Point) => {
+    // `awayFromNeighbour` points from the station's neighbour on this stretch through the station and out the other side.
+    const addPass = (station: string, at: Point, awayFromNeighbour: Point) => {
       const atStation = passes.get(station) ?? []
       passes.set(station, atStation)
-      if (atStation.some((pass) => pass.line === line.id)) return
-      atStation.push({ line: line.id, at, along, terminus: false })
+      const earlier = atStation.find((pass) => pass.line === line.id)
+      if (earlier === undefined) {
+        atStation.push({ line: line.id, at, along: awayFromNeighbour, alsoAlong: [], terminus: false })
+      } else {
+        earlier.alsoAlong.push(awayFromNeighbour)
+      }
     }
 
-    const segments = new Map<string, SegmentLayout>()
+    // The line's steps from one station to the next. A step that two stretches share is kept once.
+    const steps = new Map<string, DrawnStep>()
     for (const run of line.runs) {
       // Collect the run's straight pieces, noting which piece starts each station-to-station step.
       const pieces: OffsetSegment[] = []
@@ -239,26 +250,88 @@ export function drawLines(
         const firstPiece = stepStarts[i - 1]!
         const lastPiece = stepStarts[i]! - 1
         const stepPoints = points.slice(joins[firstPiece]!, joins[lastPiece + 1]! + 1)
-        addPass(run[i - 1]!, stepPoints[0]!, direction(pieces[firstPiece]!.from, pieces[firstPiece]!.to))
+        addPass(run[i - 1]!, stepPoints[0]!, direction(pieces[firstPiece]!.to, pieces[firstPiece]!.from))
         addPass(run[i]!, stepPoints.at(-1)!, direction(pieces[lastPiece]!.from, pieces[lastPiece]!.to))
         // A branch can repeat a step the main stretch already drew.
         const { key } = trackBetween(stopAt(run[i - 1]!, line.id), stopAt(run[i]!, line.id))
-        if (!segments.has(key)) {
-          const path = roundedPath(stepPoints, METRICS.cornerRadius)
-          const box = grow(boxAround(stepPoints), METRICS.lineWidth / 2)
-          segments.set(key, { from: run[i - 1]!, to: run[i]!, path, middle: middleOf(stepPoints), box })
+        if (!steps.has(key)) {
+          steps.set(key, { from: run[i - 1]!, to: run[i]!, points: stepPoints, startsStretch: i === 1, endsStretch: i === run.length - 1 })
         }
       }
     }
+
+    // Every direction the line leaves each station in. A stretch that ends at a station reads these to find the track it joins.
+    const leaving = new Map<string, Point[]>()
+    for (const step of steps.values()) {
+      leaving.set(step.from, [...(leaving.get(step.from) ?? []), direction(step.points[0]!, step.points[1]!)])
+      leaving.set(step.to, [...(leaving.get(step.to) ?? []), direction(step.points.at(-1)!, step.points.at(-2)!)])
+    }
+    const segments = [...steps.values()].map((step): SegmentLayout => {
+      const points = [...step.points]
+      if (step.startsStretch) points.unshift(...mergeOnto(leaving.get(step.from)!, points[0]!, points[1]!))
+      if (step.endsStretch) points.push(...mergeOnto(leaving.get(step.to)!, points.at(-1)!, points.at(-2)!))
+      return {
+        from: step.from,
+        to: step.to,
+        path: roundedPath(points, METRICS.cornerRadius),
+        // The arrow sits half-way between the two stations, so it is placed without the extra track of a merge.
+        middle: middleOf(step.points),
+        box: grow(boxAround(points), METRICS.lineWidth / 2),
+      }
+    })
 
     for (const [station, others] of neighbours) {
       const pass = passes.get(station)?.find((candidate) => candidate.line === line.id)
       if (pass !== undefined) pass.terminus = others.size === 1
     }
-    lines.push({ id: line.id, segments: [...segments.values()] })
+    lines.push({ id: line.id, segments })
   }
   return { lines, passes }
 }
+
+/** One station-to-station step of a line, before it is turned into a path. */
+interface DrawnStep {
+  from: string
+  to: string
+  points: Point[]
+  /** True when the step is the first or the last of one of the line's stretches, such as where a branch begins. */
+  startsStretch: boolean
+  endsStretch: boolean
+}
+
+/**
+ * Where a branch meets its line at an angle, a tube map curves the branch
+ * onto the line. Without that the branch runs straight into the station and
+ * the two meet at a sharp point.
+ *
+ * `mergeOnto` takes the end of a stretch. That is the station it ends `at`
+ * and the point it arrives `from`. It also takes each direction the line
+ * leaves that station in.
+ *
+ * It returns one more point for the stretch, a short way along the track that
+ * needs the smallest turn. The corner at the station is rounded like any
+ * other, and that draws the curve.
+ *
+ * It returns nothing when the line stops here. It also returns nothing when
+ * the smallest turn is a right angle or sharper.
+ */
+function mergeOnto(leaving: Point[], at: Point, from: Point): Point[] {
+  const arriving = direction(from, at)
+  let onwards: Point | undefined
+  let straightest = STRAIGHT_ENOUGH
+  for (const candidate of leaving) {
+    // 1 when the candidate carries straight on, 0 for a right angle.
+    const straightness = candidate.x * arriving.x + candidate.y * arriving.y
+    if (straightness > straightest && straightness < 1 - STRAIGHT_ENOUGH) {
+      straightest = straightness
+      onwards = candidate
+    }
+  }
+  return onwards === undefined ? [] : [move(at, onwards, METRICS.cornerRadius)]
+}
+
+/** Turns are compared as the cosine of their angle. This is the margin that keeps a right angle, and a line that already runs straight on, from counting as a merge. */
+const STRAIGHT_ENOUGH = 0.01
 
 /**
  * Two stops name the same track whichever way a line travels between them.
