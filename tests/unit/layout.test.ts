@@ -60,12 +60,22 @@ function strictlyBetween(point: { x: number; y: number }, a: { x: number; y: num
 
 describe('placeLabels', () => {
   it('keeps a name off a long diagonal that passes beside its station', () => {
-    // The track starts and ends far away, and crosses the place a name to the east would take.
-    const diagonal = { from: { x: -960, y: -1000 }, to: { x: 1040, y: 1000 }, halfWidth: 4 }
-    const station = { id: 'bank', name: 'Bank', center: { x: 0, y: 0 }, stops: [{ x: 0, y: 0 }], lineCount: 1, pinned: undefined }
+    // The track starts and ends far away, and crosses the place a name to the west would take.
+    const diagonal = { from: { x: 960, y: -1000 }, to: { x: -1040, y: 1000 }, halfWidth: 4 }
+    // The station is on vertical track, so its name goes beside it: to the west first.
+    const station = {
+      id: 'bank',
+      name: 'Bank',
+      center: { x: 0, y: 0 },
+      stops: [{ x: 0, y: 0 }],
+      tracks: [{ x: 0, y: 1 }, { x: 0, y: -1 }],
+      markerReach: 9,
+      lineCount: 1,
+      pinned: undefined,
+    }
 
-    expect(placeLabels([station], []).get('bank')!.side).toEqual({ x: 1, y: 0 })
-    expect(placeLabels([station], [diagonal]).get('bank')!.side).toEqual({ x: -1, y: 0 })
+    expect(placeLabels([station], []).get('bank')!.side).toEqual({ x: -1, y: 0 })
+    expect(placeLabels([station], [diagonal]).get('bank')!.side).toEqual({ x: 1, y: 0 })
   })
 })
 

@@ -124,11 +124,13 @@ function intersection(a: Point, b: Point, c: Point, d: Point): Point | undefined
 }
 
 /**
- * On a tube map, lines sweep round bends. `roundedPath` turns points into
- * SVG path data and swaps each corner for a curve.
+ * On a tube map, lines sweep round bends, and every bend has the same
+ * radius whether it turns 45° or 90°. `roundedPath` turns points into SVG
+ * path data and swaps each corner for an arc of a circle of that `radius`.
  *
- * A corner's curve starts and ends `radius` away from it, or half-way along a
- * neighbouring piece when that piece is too short to fit the radius.
+ * A gentle turn needs less room than a sharp one, so the arc starts closer to
+ * the corner. Where a neighbouring piece is too short to fit the arc, the arc
+ * starts half-way along that piece and its radius shrinks to suit.
  */
 export function roundedPath(points: Point[], radius: number): string {
   const first = points[0]
@@ -142,10 +144,22 @@ export function roundedPath(points: Point[], radius: number): string {
       commands.push(`L${format(corner)}`)
       break
     }
-    const cut = Math.min(radius, distance(before, corner) / 2, distance(corner, after) / 2)
+    const arriving = direction(before, corner)
+    const leaving = direction(corner, after)
+    const cosine = arriving.x * leaving.x + arriving.y * leaving.y
+    // A path that doubles back on itself has no arc to draw, so its corner is kept.
+    if (cosine < EPSILON - 1) {
+      commands.push(`L${format(corner)}`)
+      continue
+    }
+    // An arc of radius r that turns through an angle starts r × tan(angle / 2) before the corner.
+    const tanHalfTurn = Math.sqrt((1 - cosine) / (1 + cosine))
+    const cut = Math.min(radius * tanHalfTurn, distance(before, corner) / 2, distance(corner, after) / 2)
     if (cut < EPSILON) continue
-    commands.push(`L${format(move(corner, direction(corner, before), cut))}`)
-    commands.push(`Q${format(corner)} ${format(move(corner, direction(corner, after), cut))}`)
+    const arcRadius = round(cut / tanHalfTurn)
+    const clockwise = arriving.x * leaving.y - arriving.y * leaving.x > 0 ? 1 : 0
+    commands.push(`L${format(move(corner, arriving, -cut))}`)
+    commands.push(`A${arcRadius},${arcRadius} 0 0 ${clockwise} ${format(move(corner, leaving, cut))}`)
   }
   return commands.join('')
 }

@@ -22,6 +22,12 @@ const SEARCH_RINGS = 3
 /** A clash outweighs any amount of turning or distance, so a cell with fewer clashes always wins. */
 const CLASH_COST = 1000
 
+/** What each 45° of turning costs a cell. It outweighs how far the cell is from where the station was aimed. A design choice. */
+const TURN_COST = 10
+
+/** What a cell costs for each station closer to it than the usual spacing. It is less than one 45° turn, so crowding only decides between cells that turn about the same. A design choice. */
+const CROWDING_COST = 6
+
 /**
  * A graph written without positions still has to be drawn somewhere.
  * `autoPosition` gives every station a grid position, aiming for the long
@@ -104,6 +110,53 @@ export function autoPosition(network: Network): Map<string, Point> {
   }
 
   /**
+   * A station between two placed neighbours is pinned from both sides, so a
+   * poor cell makes its track double back on itself. That draws a hairpin,
+   * which a tube map never has.
+   *
+   * `placeBetween` puts `id` near `target`, on the free cell where its track
+   * runs straightest. It looks at the track to every placed neighbour, and to
+   * `towardsId`, the placed station its line is heading for. The best cell
+   * has, for each of those, another one directly opposite.
+   *
+   * It searches every grid cell, not only the usual spacing, because the
+   * gentlest turn between two stations that are next to each other is half a
+   * spacing off their track. A cell that close to other stations costs a
+   * little, so a roomier cell wins when it turns the track about as little.
+   */
+  const placeBetween = (id: string, target: Point, towardsId: string) => {
+    const joined = [...new Set([...(neighbours.get(id) ?? []), towardsId])].map((joinedId) => placed.get(joinedId)).filter((point) => point !== undefined)
+    let best: { cell: Point; cost: number } | undefined
+    for (let ring = 0; ring <= SEARCH_RINGS * STEP; ring++) {
+      for (let dx = -ring; dx <= ring; dx++) {
+        for (let dy = -ring; dy <= ring; dy++) {
+          if (Math.max(Math.abs(dx), Math.abs(dy)) !== ring) continue
+          const cell = { x: target.x + dx, y: target.y + dy }
+          if (!isFree(cell)) continue
+
+          // How far each piece of track is from having another piece directly opposite it.
+          const ways = joined.map((point) => compassIndex(cell, point))
+          let turn = 0
+          for (const way of ways) turn += 4 - Math.max(...ways.map((other) => turnsBetween(way, other)))
+
+          // Stations closer than the usual spacing.
+          let crowding = 0
+          for (let nearX = 1 - STEP; nearX < STEP; nearX++) {
+            for (let nearY = 1 - STEP; nearY < STEP; nearY++) {
+              if (!isFree({ x: cell.x + nearX, y: cell.y + nearY })) crowding++
+            }
+          }
+
+          const cost = clashesAt(id, cell) * CLASH_COST + turn * TURN_COST + crowding * CROWDING_COST + ring
+          if (best === undefined || cost < best.cost) best = { cell, cost }
+        }
+      }
+    }
+    if (best === undefined) placeNear(id, target)
+    else place(id, best.cell)
+  }
+
+  /**
    * `walkFrom` places `ids` one after another, leading away from the placed
    * station `anchorId`.
    *
@@ -139,7 +192,7 @@ export function autoPosition(network: Network): Map<string, Point> {
             : turnsBetween(index, heading) + (used.includes(index) ? 4 : 0)
         // When two directions tie, the walk heads away from the middle of the map.
         const outward = step.x * Math.sign(previous.x - centre.x) + step.y * Math.sign(previous.y - centre.y)
-        const cost = clashesAt(id, cell) * CLASH_COST + turn * 10 - outward
+        const cost = clashesAt(id, cell) * CLASH_COST + turn * TURN_COST - outward
         if (best === undefined || cost < best.cost) best = { index, cell, cost }
       }
 
@@ -194,7 +247,8 @@ export function autoPosition(network: Network): Map<string, Point> {
         for (const [index, id] of stretch.entries()) {
           if (placed.has(id)) continue
           const share = (index + 1) / (stretch.length + 1)
-          placeNear(id, snap({ x: from.x + (to.x - from.x) * share, y: from.y + (to.y - from.y) * share }))
+          const target = { x: Math.round(from.x + (to.x - from.x) * share), y: Math.round(from.y + (to.y - from.y) * share) }
+          placeBetween(id, target, after)
         }
       } else if (before !== undefined) {
         walkFrom(before, stretch, headingInto(before, run[i - 2]))

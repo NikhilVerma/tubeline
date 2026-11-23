@@ -1,6 +1,6 @@
 import type { Network, Point } from '../model/network.ts'
 import { autoPosition } from './auto-position.ts'
-import { distance, move, clockwiseNormal, type Box } from './geometry.ts'
+import { boxAround, distance, move, clockwiseNormal, type Box } from './geometry.ts'
 import { placeLabels, type LabelLayout, type TrackObstacle } from './labels.ts'
 import { METRICS } from './metrics.ts'
 import { buildTracks, drawLines, type LineLayout, type Pass, type StopLookup } from './tracks.ts'
@@ -55,33 +55,47 @@ export function layoutNetwork(network: Network): MapLayout {
   const tracks = buildTracks(network, stopAt)
   const { lines, passes } = drawLines(network, stopAt, tracks)
 
+  const stations = [...network.stations.values()].map((station) => {
+    const stationPasses = passes.get(station.id) ?? []
+    const interchange = !runSideBySide(stationPasses)
+    // A line that curves through a station passes a little inside its position. A tick stands on the line, so the station is centred there.
+    const center = interchange || stationPasses.length === 0 ? positions.get(station.id)! : middleOf(stationPasses.map((pass) => pass.at))
+    return { station, center, passes: stationPasses, interchange }
+  })
+  // A line that curves through a station cuts the corner there, so the track a name has to keep off runs through the station's centre and not through the corner.
+  const curvesThrough = new Map<string, Point>()
+  for (const { station, center, interchange } of stations) {
+    if (interchange) continue
+    for (const lineId of station.lines) {
+      const stop = stopAt(station.id, lineId)
+      curvesThrough.set(`${stop.x},${stop.y}`, center)
+    }
+  }
+  const asDrawn = (point: Point) => curvesThrough.get(`${point.x},${point.y}`) ?? point
   const obstacles: TrackObstacle[] = []
   for (const track of tracks.values()) {
     // Half of what the track's lines cover: the first and last line are a spacing apart for each line between them, and each reaches half its width further out.
     const halfWidth = ((track.lines.length - 1) * METRICS.lineSpacing + METRICS.lineWidth) / 2
-    for (let i = 1; i < track.points.length; i++) obstacles.push({ from: track.points[i - 1]!, to: track.points[i]!, halfWidth })
+    const points = [asDrawn(track.points[0]!), ...track.points.slice(1, -1), asDrawn(track.points.at(-1)!)]
+    for (let i = 1; i < points.length; i++) obstacles.push({ from: points[i - 1]!, to: points[i]!, halfWidth })
   }
 
-  const stations = [...network.stations.values()].map((station) => {
-    const center = positions.get(station.id)!
-    const stationPasses = passes.get(station.id) ?? []
-    return { station, center, passes: stationPasses }
-  })
   const labels = placeLabels(
-    stations.map(({ station, center, passes: stationPasses }) => ({
+    stations.map(({ station, center, passes: stationPasses, interchange }) => ({
       id: station.id,
       name: station.name,
       center,
       stops: stationPasses.map((pass) => pass.at),
+      tracks: stationPasses.flatMap((pass) => [pass.along, ...pass.alsoAlong]),
+      markerReach: interchange ? METRICS.interchangeRadius + METRICS.interchangeOutline : METRICS.tickReach,
       lineCount: station.lines.length,
       pinned: station.labelSide,
     })),
     obstacles,
   )
 
-  const stationLayouts = stations.map(({ station, center, passes: stationPasses }): StationLayout => {
+  const stationLayouts = stations.map(({ station, center, passes: stationPasses, interchange }): StationLayout => {
     const label = labels.get(station.id)!
-    const interchange = !runSideBySide(stationPasses)
     // Lines side by side share one tick, on the line nearest the name. A bar crosses its line, so every line keeps its own.
     const towardsName = (pass: Pass) => pass.at.x * label.side.x + pass.at.y * label.side.y
     const nearestName = Math.max(...stationPasses.map(towardsName))
@@ -98,6 +112,11 @@ export function layoutNetwork(network: Network): MapLayout {
   })
 
   return { bounds: boundsOf(stationLayouts), lines, stations: stationLayouts }
+}
+
+function middleOf(points: Point[]): Point {
+  const box = boxAround(points)
+  return { x: (box.left + box.right) / 2, y: (box.top + box.bottom) / 2 }
 }
 
 function uniquePoints(points: Point[]): Point[] {
@@ -132,6 +151,7 @@ function isBar(pass: Pass, labelSide: Point): boolean {
 
 /**
  * A tick sticks out of the line towards the station's name. A bar crosses the line instead.
+ * Where track meets at a corner that faces the name, the tick points out of the corner.
  *
  * Where a piece of track stops at a station, at the end of a line or at a
  * turn, it is drawn with a rounded end that reaches half the line's width
@@ -141,6 +161,11 @@ function isBar(pass: Pass, labelSide: Point): boolean {
  * the track a flat end.
  */
 function tickFor(pass: Pass, labelSide: Point): { from: Point; to: Point } {
+  // Where every piece of track is behind the name, the pieces meet at a point that faces it. The tick carries on from that point, towards the name.
+  const pieces = [pass.along, ...pass.alsoAlong]
+  if (pieces.length > 1 && pieces.every((piece) => piece.x * labelSide.x + piece.y * labelSide.y > SAME_PLACE)) {
+    return { from: pass.at, to: move(pass.at, labelSide, METRICS.tickReach) }
+  }
   const track = trackUnderTick(pass, labelSide)
   const across = clockwiseNormal(track)
   const reach = (Math.sign(across.x * labelSide.x + across.y * labelSide.y) || 1) * METRICS.tickReach

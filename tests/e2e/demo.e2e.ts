@@ -9,6 +9,9 @@ import metro from '../../demo/data/metro.json' with { type: 'json' }
 
 const station = (page: Page, id: string) => page.locator(`.station[data-station="${id}"]`)
 
+/** A station's marker. Clicks go here, because the middle of a station can be the empty space between its marker and its name. */
+const marker = (page: Page, id: string) => station(page, id).locator('.halo')
+
 test.beforeEach(async ({ page }) => {
   // Any error the page logs or throws fails the test that caused it.
   page.on('pageerror', (error) => {
@@ -21,10 +24,10 @@ test.beforeEach(async ({ page }) => {
 })
 
 test('plans a journey between two clicked stations', async ({ page }) => {
-  await station(page, 'larkfield').click()
+  await marker(page, 'larkfield').click()
   await expect(page.locator('.journey')).toContainText('From Larkfield')
 
-  await station(page, 'marsh-end').click()
+  await marker(page, 'marsh-end').click()
 
   const journey = page.locator('.journey')
   await expect(journey.getByRole('heading')).toHaveText('Larkfield to Marsh End')
@@ -185,14 +188,14 @@ test('places a graph that has no positions, and respects one-way lines', async (
   const centres = await page.locator('.station .halo').evaluateAll((halos) => halos.map((halo) => `${halo.getAttribute('cx')},${halo.getAttribute('cy')}`))
   expect(new Set(centres).size).toBe(12)
 
-  await station(page, 'cart').click()
-  await station(page, 'refunded').click()
+  await marker(page, 'cart').click()
+  await marker(page, 'refunded').click()
   await expect(page.locator('.journey')).toContainText('Cart to Refunded')
   await expect(page.locator('.journey li').first()).toContainText('Fulfilment')
 
   // The workflow only runs forwards, so there is no way back to the cart.
-  await station(page, 'refunded').click()
-  await station(page, 'cart').click()
+  await marker(page, 'refunded').click()
+  await marker(page, 'cart').click()
   await expect(page.locator('.journey')).toContainText('No route joins these stations.')
 })
 

@@ -255,30 +255,41 @@ export function drawLines(
         // A branch can repeat a step the main stretch already drew.
         const { key } = trackBetween(stopAt(run[i - 1]!, line.id), stopAt(run[i]!, line.id))
         if (!steps.has(key)) {
-          steps.set(key, { from: run[i - 1]!, to: run[i]!, points: stepPoints, startsStretch: i === 1, endsStretch: i === run.length - 1 })
+          steps.set(key, { from: run[i - 1]!, to: run[i]!, points: stepPoints })
         }
       }
     }
 
-    // Every direction the line leaves each station in. A stretch that ends at a station reads these to find the track it joins.
+    // The next point of the line's track in every direction it leaves each station. A step that ends at a station reads these to find the track it turns onto.
     const leaving = new Map<string, Point[]>()
     for (const step of steps.values()) {
-      leaving.set(step.from, [...(leaving.get(step.from) ?? []), direction(step.points[0]!, step.points[1]!)])
-      leaving.set(step.to, [...(leaving.get(step.to) ?? []), direction(step.points.at(-1)!, step.points.at(-2)!)])
+      leaving.set(step.from, [...(leaving.get(step.from) ?? []), step.points[1]!])
+      leaving.set(step.to, [...(leaving.get(step.to) ?? []), step.points.at(-2)!])
     }
     const segments = [...steps.values()].map((step): SegmentLayout => {
-      const points = [...step.points]
-      if (step.startsStretch) points.unshift(...mergeOnto(leaving.get(step.from)!, points[0]!, points[1]!))
-      if (step.endsStretch) points.push(...mergeOnto(leaving.get(step.to)!, points.at(-1)!, points.at(-2)!))
+      const start = turnAtStation(leaving.get(step.from)!, step.points[0]!, step.points[1]!, stopAt(step.from, line.id))
+      const end = turnAtStation(leaving.get(step.to)!, step.points.at(-1)!, step.points.at(-2)!, stopAt(step.to, line.id))
+      const points = [...(start === undefined ? [] : [start.onwards]), ...step.points, ...(end === undefined ? [] : [end.onwards])]
       return {
         from: step.from,
         to: step.to,
         path: roundedPath(points, METRICS.cornerRadius),
-        // The arrow sits half-way between the two stations, so it is placed without the extra track of a merge.
+        // The arrow sits half-way between the two stations, so it is placed without the extra track of a turn.
         middle: middleOf(step.points),
         box: grow(boxAround(points), METRICS.lineWidth / 2),
       }
     })
+
+    // Where the line curves through a station, the station's mark stands on the curve.
+    for (const [station, nextPoints] of leaving) {
+      const pass = passes.get(station)?.find((candidate) => candidate.line === line.id)
+      if (pass === undefined || nextPoints.length !== 2) continue
+      const turn = turnAtStation(nextPoints, pass.at, nextPoints[0]!, stopAt(station, line.id))
+      if (turn === undefined) continue
+      pass.at = turn.middle
+      pass.along = turn.alongMiddle
+      pass.alsoAlong = [{ x: -turn.alongMiddle.x, y: -turn.alongMiddle.y }]
+    }
 
     for (const [station, others] of neighbours) {
       const pass = passes.get(station)?.find((candidate) => candidate.line === line.id)
@@ -294,43 +305,87 @@ interface DrawnStep {
   from: string
   to: string
   points: Point[]
-  /** True when the step is the first or the last of one of the line's stretches, such as where a branch begins. */
-  startsStretch: boolean
-  endsStretch: boolean
 }
 
 /**
- * Where a branch meets its line at an angle, a tube map curves the branch
- * onto the line. Without that the branch runs straight into the station and
- * the two meet at a sharp point.
+ * A tube map never turns a line at a sharp point. Where a line turns at a
+ * station, or a branch meets its line at an angle, the track curves round.
+ * Each station-to-station step is drawn on its own, so a step that stopped
+ * dead at the station would leave that sharp point.
  *
- * `mergeOnto` takes the end of a stretch. That is the station it ends `at`
- * and the point it arrives `from`. It also takes each direction the line
- * leaves that station in.
+ * `turnAtStation` takes the end of a step. That is the station it ends `at`
+ * and the point it arrives `from`. It also takes the next point of the line's
+ * track in each direction the line leaves that station, and the station's
+ * `stop`, which is where its ring is drawn. A line that shares track ends a
+ * little to one side of it.
  *
- * It returns one more point for the stretch, a short way along the track that
- * needs the smallest turn. The corner at the station is rounded like any
- * other, and that draws the curve.
+ * It picks the track that needs the smallest turn, and returns:
  *
- * It returns nothing when the line stops here. It also returns nothing when
- * the smallest turn is a right angle or sharper.
+ * - `onwards`: one more point for the step, a short way along that track. The
+ *   corner at the station is then rounded like any other, and that draws the
+ *   curve. The step on the other side of the station draws the same curve.
+ * - `middle` and `alongMiddle`: the middle of the curve and the direction of
+ *   the track there, which is where the station's mark belongs.
+ *
+ * It returns nothing when the line stops here, or when some track carries
+ * straight on, because the step already runs smoothly into that track. Where
+ * the line branches it also returns nothing for a turn sharper than a right
+ * angle. A branch that meets its line square could curve either way, and it
+ * takes the first track it was given.
  */
-function mergeOnto(leaving: Point[], at: Point, from: Point): Point[] {
+function turnAtStation(leaving: Point[], at: Point, from: Point, stop: Point): { onwards: Point; middle: Point; alongMiddle: Point } | undefined {
   const arriving = direction(from, at)
-  let onwards: Point | undefined
-  let straightest = STRAIGHT_ENOUGH
+  let next: Point | undefined
+  // Two ways out of the station is a line passing through. More is a branch.
+  let straightest = leaving.length > 2 ? -STRAIGHT_ENOUGH : STRAIGHT_ENOUGH - 1
   for (const candidate of leaving) {
-    // 1 when the candidate carries straight on, 0 for a right angle.
-    const straightness = candidate.x * arriving.x + candidate.y * arriving.y
-    if (straightness > straightest && straightness < 1 - STRAIGHT_ENOUGH) {
+    const leavingDirection = direction(at, candidate)
+    // 1 when the candidate carries straight on, 0 for a right angle, -1 for the way the step came.
+    const straightness = leavingDirection.x * arriving.x + leavingDirection.y * arriving.y
+    if (straightness >= 1 - STRAIGHT_ENOUGH) return undefined
+    if (straightness > straightest) {
       straightest = straightness
-      onwards = candidate
+      next = candidate
     }
   }
-  return onwards === undefined ? [] : [move(at, onwards, METRICS.cornerRadius)]
+  if (next === undefined) return undefined
+  const onwards = direction(at, next)
+
+  // The curve sits inside the corner, between the two pieces. Its middle is on the line that halves the corner.
+  const intoCorner = direction(at, { x: at.x + onwards.x - arriving.x, y: at.y + onwards.y - arriving.y })
+  const alongMiddle = direction(at, { x: at.x + onwards.x + arriving.x, y: at.y + onwards.y + arriving.y })
+  // A line beside others on shared track can already turn inside the station's stop, which leaves the curve less room under the ring.
+  const alreadyInside = Math.max(0, (at.x - stop.x) * intoCorner.x + (at.y - stop.y) * intoCorner.y)
+  const furthestInside = FURTHEST_CURVE_FROM_STATION - alreadyInside
+  // With no room left the turn stays a corner, which the ring covers.
+  if (furthestInside < STRAIGHT_ENOUGH) return undefined
+
+  // A bend takes up radius × tan(half the turn) of each piece it joins, and at most half of a piece.
+  const tanHalfTurn = Math.sqrt((1 - straightest) / (1 + straightest))
+  // The middle of a curve of radius r is r × (1 / cos(half the turn) − 1) inside the corner.
+  const middlePerRadius = Math.sqrt(1 + tanHalfTurn * tanHalfTurn) - 1
+  const radius = Math.min(METRICS.cornerRadius, furthestInside / middlePerRadius, distance(from, at) / 2 / tanHalfTurn, distance(at, next) / 2 / tanHalfTurn)
+  const bendLength = radius * tanHalfTurn
+
+  return {
+    // Twice the bend's length, so that half of the extra piece is exactly what the bend takes.
+    onwards: move(at, onwards, 2 * bendLength),
+    middle: move(at, intoCorner, radius * middlePerRadius),
+    alongMiddle,
+  }
 }
 
-/** Turns are compared as the cosine of their angle. This is the margin that keeps a right angle, and a line that already runs straight on, from counting as a merge. */
+/**
+ * A curve at a station cuts inside the corner, away from the station's
+ * position. A sharp turn at the full radius would carry the line clear of an
+ * interchange ring drawn there. So a curve at a station is tightened until
+ * the line still passes under the ring.
+ *
+ * This is how far the middle of the line may sit from the station's stop.
+ */
+const FURTHEST_CURVE_FROM_STATION = METRICS.interchangeRadius + METRICS.interchangeOutline - METRICS.lineWidth / 2
+
+/** Turns are compared as the cosine of their angle. This is the margin that settles whether a line runs straight on, doubles back, or branches at a right angle. */
 const STRAIGHT_ENOUGH = 0.01
 
 /**

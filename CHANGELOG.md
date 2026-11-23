@@ -7,6 +7,20 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-11-23
+
+### Changed
+
+- Sizes are now the medians measured on the official London tube map: bend radius, tick, interchange ring, the space between a station and its name, and the space between a name's two lines. The README lists each one.
+- Every bend has the same radius, whatever its angle.
+- A line that turns at a station curves through it, and the station's tick stands on the curve.
+- A name sits square to its track: above or below horizontal track, and beside vertical track.
+- Where track meets at a corner, the name sits on the far side of the corner and the tick points out of it.
+- A name above or below its line is split over two lines. A name beside its line stays on one, unless it is long.
+- A branch that meets its line at a right angle curves onto it.
+- A name keeps off a curve as it is drawn, so it can sit centred over a line that curves through its station.
+- Automatic placement puts a station between two placed neighbours where its track runs straightest, so its line no longer doubles back there.
+
 ## [0.3.0] - 2026-11-23
 
 ### Changed

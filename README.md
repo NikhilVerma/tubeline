@@ -67,7 +67,7 @@ These are the rules the library is built on.
 
 1. **It is a graph first.** The tube map is the interface, and the data underneath is nodes, paths and weighted, directed edges. Nothing in the library knows about trains.
 2. **Track runs in eight directions only.** Every stretch is horizontal, vertical or at 45°. This one rule is most of what makes a tube map look like a tube map.
-3. **A line runs straight through a station.** Each stretch between two stations gets at most one bend, and the bend sits away from the stations where it can.
+3. **A line runs straight through a station.** Each stretch between two stations gets at most one bend, and the bend sits away from the stations where it can. Where a line has to turn at a station, it curves through it.
 4. **Lines that share track run side by side.** They keep a thin gap between them, keep their order, and share one station mark.
 5. **A station is a tick, and an interchange is a ring.** Lines that stop a short way apart get a ring each, joined by a walkway.
 6. **Your positions are kept.** Give positions and the map draws your design. Leave them out and it places the stations itself, which suits small graphs.
@@ -176,6 +176,53 @@ custom properties on the container to theme it:
 | `--tubeline-panel-background` | `rgb(255 255 255 / 0.94)` |
 | `--tubeline-font` | the system font |
 
+## The measured rules
+
+The look of the official London tube map is partly a matter of taste, so we
+measured it instead of guessing. A script read every line, tick, ring and
+name out of the official map and took the median of each measure. tubeline's
+defaults are those medians. One line width is the unit, so the rules hold at
+any size.
+
+| Rule | What tubeline does | How it was measured |
+| --- | --- | --- |
+| **No sharp turns** | Every turn is a curve, including a turn at a station. The station's tick stands on the curve. | The official track has 366 curved pieces and 2 sharp corners. |
+| **One radius for every bend** | A bend is an arc 3.4 line widths in radius, whatever its angle. | The median of 159 bends. |
+| **Short, thick ticks** | A tick is 0.66 line widths thick and reaches 1.2 line widths from the middle of its line. | The medians of 175 ticks. |
+| **A bold ring** | An interchange ring is 1.5 line widths in radius, and its border is half a line width. | The medians of 68 rings. |
+| **Names sit close** | A name's letters start 0.58 line widths from its tick or ring. | The median of 268 names. |
+| **Tight name lines** | The two lines of a name are 1.95 line widths apart. | The median of 200 two-line names. |
+| **Names sit square to the track** | A name goes above or below horizontal track, and left or right of vertical track. Below is tried before above, and left before right. | On horizontal track, 137 of 157 names are above or below. On vertical track, 150 of 169 are beside. Below beats above 82 to 55, and left beats right 83 to 67. |
+| **The open side** | Where track meets at a corner or the point of a branch, the name sits on the far side of that point, and the tick points out of it. | A design choice, not a measurement. |
+| **Wrap above and below** | A name above or below its line is split over two lines. A name beside its line stays on one, unless it is long. | Of the names that have a space, 87% are split above or below a line, and 36% beside one. |
+| **Names align to their side** | A name left of its station ends at the station. A name right of it starts there. A name above or below is centred. | True of all 106 two-line names checked. |
+| **Whole words only** | A name with no space is never split. | True of all 171 one-word names. |
+
+A name takes the next best side when its first choice is taken, so these are
+defaults, not guarantees. `labelSide` on a station overrides them.
+
+### How the rules were found
+
+"Looks like a tube map" is an opinion. We wanted rules we could check, so
+each one went through the same steps.
+
+1. We measure in line widths. Every size is divided by the width of a line,
+   which turns "the ring looks too thin" into "the border is 0.25 line widths
+   and the official one is 0.5".
+2. We take the median of many. One station can be a special case, and the
+   median of 68 rings or 159 bends is the map's habit.
+3. We count relations as well as sizes. Our first pass measured sizes and
+   still drew sharp corners, because nothing had asked "is any corner
+   sharp?". A rule can now be a count: how many corners are sharp, which
+   side names sit on, how many ticks stand on straight track.
+4. We say which rules are choices. Where the official map gave no clear
+   answer, the table and the code mark the rule as a design choice.
+5. We keep station names out of the rules. Each rule has to work on any
+   graph, so a fix that only helps one station of one map is left out.
+6. We score the result. The comparison below gives one number for the whole
+   drawing, and a change has to hold up against that number as well as by
+   eye.
+
 ## How close is it to a real tube map?
 
 We measured it. We took a 136 × 112 pt area of central London from the
@@ -184,13 +231,13 @@ both at the same size, and compared them pixel by pixel.
 
 | Measure | Result |
 | --- | --- |
-| Pixels that match | 85.1% |
-| Victoria line | 92% |
-| Central line | 86% |
-| Bakerloo line | 84% |
+| Pixels that match | 85.3% |
+| Victoria line | 93% |
+| Central line | 87% |
+| Bakerloo line | 86% |
 | District line | 70% |
-| Circle line | 63% |
-| Jubilee line | 43% |
+| Circle line | 64% |
+| Jubilee line | 44% |
 | Elizabeth line | 36% |
 
 A line's figure is the share of pixels the two drawings of that line have in
@@ -200,6 +247,8 @@ What doesn't match yet:
 
 - The official map uses its own typeface. tubeline uses yours.
 - tubeline has no step-free, rail or river symbols, and draws no river.
+- tubeline curves a line that turns at a station, and tightens that curve to keep the line under the station's ring. The official map puts its bends between stations: 97% of its ticks sit on straight track.
+- tubeline keeps a sharp corner where a branch leaves its line at a turn sharper than a right angle.
 - tubeline allows one bend between two stations. The official map sometimes uses two.
 - tubeline keeps a thin gap between all lines that share track. The official map lets some touch, such as the Circle and District lines.
 - tubeline draws every line solid. The official map also has hollow and dashed lines.
